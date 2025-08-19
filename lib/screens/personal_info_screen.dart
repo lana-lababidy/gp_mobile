@@ -3,6 +3,10 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+// إذا اسم الباكيج عندك مختلف عن fikra_app بدّل السطر التالي أو استخدم import نسبي:
+// import 'home_screen.dart';
+import 'package:fikra_app/screens/home_screen.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -268,12 +272,13 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                     foregroundColor: MaterialStateProperty.all(Colors.white),
                   ),
                   onPressed: () {
-                    print("الاسم: ${nameController.text}");
-                    print("البريد: ${emailController.text}");
-                    print("الجنس: $gender");
-                    print("البلد: $country");
-                    print("المدينة: $city");
-                    print("تاريخ الميلاد: $birthDate");
+                    // انتقال إلى واجهة HomeScreen بدل الطباعة
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const HomeScreen(),
+                      ),
+                    );
                   },
                   child: Ink(
                     decoration: BoxDecoration(
