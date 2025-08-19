@@ -1,6 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+
+import '../controllers/cases_controller.dart';
+import '../models/case_model.dart';
 
 class AddCaseScreen extends StatefulWidget {
   const AddCaseScreen({super.key});
@@ -10,203 +12,114 @@ class AddCaseScreen extends StatefulWidget {
 }
 
 class _AddCaseScreenState extends State<AddCaseScreen> {
-  final TextEditingController titleController = TextEditingController();
-  final TextEditingController descriptionController = TextEditingController();
-  String? priority;
-  DateTime? selectedDate;
-  File? _image;
+  final _formKey = GlobalKey<FormState>();
+  final _titleCtrl = TextEditingController();
+  final _imageUrlCtrl = TextEditingController();
+  final _goalCtrl = TextEditingController(text: '10000');
+  final _raisedCtrl = TextEditingController(text: '0');
+  CaseCategory _category = CaseCategory.money;
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
-    }
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _imageUrlCtrl.dispose();
+    _goalCtrl.dispose();
+    _raisedCtrl.dispose();
+    super.dispose();
   }
 
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+  void _save() {
+    if (_formKey.currentState?.validate() != true) return;
+
+    final item = CaseModel(
+      id: UniqueKey().toString(),
+      title: _titleCtrl.text.trim(),
+      imageUrl:
+          _imageUrlCtrl.text.trim().isEmpty ? null : _imageUrlCtrl.text.trim(),
+      createdAt: DateTime.now(),
+      category: _category,
+      goal: double.tryParse(_goalCtrl.text.trim()) ?? 0,
+      raised: double.tryParse(_raisedCtrl.text.trim()) ?? 0,
     );
-    if (picked != null) {
-      setState(() {
-        selectedDate = picked;
-      });
-    }
+
+    context.read<CasesController>().addCase(item);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تمت إضافة الحالة بنجاح')),
+    );
+
+    Navigator.pop(context); // ارجع للقائمة — ستتحدث تلقائيًا
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          "Add Case",
-          style: TextStyle(
-            fontFamily: "Cairo",
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF0A2A6C),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('إضافة حالة')),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
             children: [
-              // العنوان
-              TextField(
-                controller: titleController,
-                decoration: InputDecoration(
-                  labelText: "Title",
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
+              TextFormField(
+                controller: _titleCtrl,
+                decoration: const InputDecoration(labelText: 'عنوان الحالة'),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'العنوان مطلوب' : null,
               ),
-              const SizedBox(height: 15),
-
-              // الوصف
-              TextField(
-                controller: descriptionController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  labelText: "Description",
-                  alignLabelWithHint: true,
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _imageUrlCtrl,
+                decoration:
+                    const InputDecoration(labelText: 'رابط الصورة (اختياري)'),
               ),
-              const SizedBox(height: 15),
-
-              // اختيار التاريخ
-              GestureDetector(
-                onTap: _pickDate,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 15, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_today,
-                          color: Color(0xFF0A2A6C)),
-                      const SizedBox(width: 8),
-                      Text(
-                        selectedDate == null
-                            ? "Select Date"
-                            : "${selectedDate!.year}-${selectedDate!.month}-${selectedDate!.day}",
-                        style: TextStyle(
-                          color:
-                              selectedDate == null ? Colors.grey : Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<CaseCategory>(
+                value: _category,
+                decoration: const InputDecoration(labelText: 'التصنيف'),
+                items: const [
+                  DropdownMenuItem(
+                      value: CaseCategory.money, child: Text('أموال')),
+                  DropdownMenuItem(
+                      value: CaseCategory.inKind, child: Text('تبرعات عينية')),
+                  DropdownMenuItem(
+                      value: CaseCategory.physicalEffort,
+                      child: Text('مجهود بدني')),
+                  DropdownMenuItem(
+                      value: CaseCategory.critical, child: Text('أمراض حرجة')),
+                  DropdownMenuItem(
+                      value: CaseCategory.children, child: Text('أطفال')),
+                  DropdownMenuItem(
+                      value: CaseCategory.chronic, child: Text('أمراض مزمنة')),
+                ],
+                onChanged: (v) => setState(() => _category = v ?? _category),
               ),
-              const SizedBox(height: 15),
-
-              // الأولوية
-              DropdownButtonFormField<String>(
-                value: priority,
-                decoration: InputDecoration(
-                  labelText: "Priority",
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                items: ["Low", "Medium", "High"]
-                    .map(
-                      (e) => DropdownMenuItem(
-                        value: e,
-                        child: Text(e),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (val) {
-                  setState(() {
-                    priority = val;
-                  });
-                },
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _goalCtrl,
+                keyboardType: TextInputType.number,
+                decoration:
+                    const InputDecoration(labelText: 'الهدف (مثلاً 10000)'),
+                validator: (v) => (v == null || double.tryParse(v) == null)
+                    ? 'أدخل رقم صحيح'
+                    : null,
               ),
-              const SizedBox(height: 15),
-
-              // رفع صورة
-              GestureDetector(
-                onTap: _pickImage,
-                child: Container(
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade400),
-                  ),
-                  child: _image == null
-                      ? const Center(
-                          child: Icon(Icons.add_a_photo,
-                              size: 40, color: Colors.grey),
-                        )
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(_image!, fit: BoxFit.cover),
-                        ),
-                ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _raisedCtrl,
+                keyboardType: TextInputType.number,
+                decoration:
+                    const InputDecoration(labelText: 'المحصول حتى الآن'),
+                validator: (v) => (v == null || double.tryParse(v) == null)
+                    ? 'أدخل رقم صحيح'
+                    : null,
               ),
-              const SizedBox(height: 25),
-
-              // زر الحفظ
-              SizedBox(
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0A2A6C),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: () {
-                    // 🟢 عرض Snackbar
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "تم حفظ الحالة بنجاح ✅",
-                          style: TextStyle(fontFamily: "Cairo", fontSize: 16),
-                        ),
-                        backgroundColor: Colors.green,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-
-                    // 🔹 ترجع للشاشة الرئيسية بعد ثانية
-                    Future.delayed(const Duration(seconds: 2), () {
-                      Navigator.pop(context);
-                    });
-                  },
-                  child: const Text(
-                    "Save Case",
-                    style: TextStyle(fontSize: 16, fontFamily: "Cairo"),
-                  ),
-                ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: _save,
+                icon: const Icon(Icons.save),
+                label: const Text('حفظ'),
               ),
             ],
           ),
