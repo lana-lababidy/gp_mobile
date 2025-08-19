@@ -19,8 +19,11 @@ dependencies:
   # لاختيار الصور من المعرض
   image_picker: ^0.8.7+5
 
+  # لإدارة الحالة (State Management)
+  provider: ^6.0.5
+
   # أي حزم أخرى قد تحتاجها أضفها هنا
-  # مثل http, provider, shared_preferences...
+  # مثل http, shared_preferences...
 
 dev_dependencies:
   flutter_test:
