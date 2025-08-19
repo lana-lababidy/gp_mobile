@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'add_case_screen.dart'; // استيراد شاشة إضافة حالة
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -7,6 +8,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
@@ -25,70 +27,57 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
 
-      // المحتوى
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ✅ Banner / Slider
-            Container(
-              margin: const EdgeInsets.all(16),
-              height: 150,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                image: const DecorationImage(
-                  image: AssetImage(
-                      "assets/images/operation.jpg"), // عدل الصورة هون
-                  fit: BoxFit.cover,
-                ),
-              ),
-              alignment: Alignment.center,
-              child: Container(
-                color: Colors.black54,
-                padding: const EdgeInsets.all(8),
-                child: const Text(
-                  "دعم عمليات جراحية متنوعة",
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // 🔹 مثال على كارد علوي
+          Container(
+            height: 150,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              image: const DecorationImage(
+                image: AssetImage("assets/images/operation.jpg"),
+                fit: BoxFit.cover,
               ),
             ),
-
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                "الحالات المثبتة",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF0A2A6C),
-                ),
+            alignment: Alignment.center,
+            child: Container(
+              color: Colors.black.withOpacity(0.4),
+              child: const Text(
+                "دعم عمليات جراحية متنوعة",
+                style: TextStyle(color: Colors.white, fontSize: 18),
               ),
             ),
-            const SizedBox(height: 10),
+          ),
 
-            // ✅ Card لحالة مثبتة
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          const SizedBox(height: 20),
+
+          const Text(
+            "الحالات المثبتة",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0A2A6C),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // 🔹 كارد لحالة مثلاً
+          Card(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            elevation: 3,
+            child: Padding(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.shade200,
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.asset(
-                      "assets/images/hand.jpg", // صورة الحالة
-                      height: 150,
+                      "assets/images/hand.jpg",
+                      height: 120,
                       width: double.infinity,
                       fit: BoxFit.cover,
                     ),
@@ -100,42 +89,38 @@ class HomeScreen extends StatelessWidget {
                     textAlign: TextAlign.right,
                   ),
                   const SizedBox(height: 8),
-                  // Progress bar
-                  LinearProgressIndicator(
-                    value: 0.59, // نسبة التقدم
-                    backgroundColor: Colors.grey.shade200,
-                    color: const Color(0xFF0A2A6C),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: LinearProgressIndicator(
+                          value: 0.59,
+                          color: const Color(0xFF0A2A6C),
+                          backgroundColor: Colors.grey[300],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text("59%"),
+                    ],
                   ),
-                  const SizedBox(height: 5),
-                  const Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      "59%  |  2025-08-12",
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  )
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-
-      // ✅ شريط تنقل سفلي
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: const Color(0xFF0A2A6C),
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined), label: "الرئيسية"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline), label: "حسابي"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.favorite_outline), label: "تبرعاتي"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.settings_outlined), label: "الإعدادات"),
+          ),
         ],
       ),
+
+      // 🔹 زر إضافة حالة
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AddCaseScreen()),
+          );
+        },
+        backgroundColor: const Color(0xFF0A2A6C),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
