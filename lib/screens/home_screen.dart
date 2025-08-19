@@ -1,8 +1,81 @@
 import 'package:flutter/material.dart';
 import 'add_case_screen.dart';
+import 'cases_list_screen.dart'; // استورد شاشة الحالات
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+
+  final List<Widget> _pages = [
+    // الصفحة 0: الرئيسية
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Card(
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          color: Colors.blue.shade50,
+          child: const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              "أهلاً بك 👋",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0A2A6C),
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: [
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+                child: const ListTile(
+                  leading: Icon(Icons.assignment, color: Color(0xFF0A2A6C)),
+                  title: Text(
+                    "مرحباً بك في أبشر",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
+                  subtitle: Text(
+                    "هذه هي الحالة الأولى للتجربة",
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+
+    // الصفحة 1: الحالات
+    const CasesListScreen(),
+
+    // الصفحة 2: إضافة حالة
+    const AddCaseScreen(),
+
+    // الصفحة 3: الإعدادات (مؤقتاً نص فقط)
+    const Center(child: Text("الإعدادات")),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -27,95 +100,23 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 🔹 كرت ترحيب
-          Card(
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            color: Colors.blue.shade50,
-            child: const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                "أهلاً بك 👋",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF0A2A6C),
-                ),
-                textAlign: TextAlign.right,
-              ),
-            ),
-          ),
-
-          // 🔹 قائمة الحالات
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 2,
-                  child: const ListTile(
-                    leading: Icon(Icons.assignment, color: Color(0xFF0A2A6C)),
-                    title: Text(
-                      "مرحباً بك في أبشر",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.right,
-                    ),
-                    subtitle: Text(
-                      "هذه هي الحالة الأولى للتجربة",
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-
-      // 🔹 شريط التنقل السفلي
+      body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
         selectedItemColor: const Color(0xFF0A2A6C),
         unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "الرئيسية"),
+          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: "الحالات"),
           BottomNavigationBarItem(icon: Icon(Icons.add_box), label: "إضافة"),
           BottomNavigationBarItem(
               icon: Icon(Icons.settings), label: "الإعدادات"),
         ],
-        currentIndex: 0, // افتراضياً على الرئيسية
-        onTap: (index) {
-          if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AddCaseScreen()),
-            );
-          }
-        },
-      ),
-
-      // 🔹 زر إضافة حالة (Extended FAB)
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddCaseScreen()),
-          );
-        },
-        backgroundColor: const Color(0xFF0A2A6C),
-        label: const Text("إضافة حالة"),
-        icon: const Icon(Icons.add),
       ),
     );
   }
