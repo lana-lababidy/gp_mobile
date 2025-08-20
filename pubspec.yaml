@@ -19,17 +19,24 @@ dependencies:
   # لاختيار الصور من المعرض
   image_picker: ^0.8.7+5
 
-  # إدارة الحالة
-  provider: ^6.1.5
+  # لإدارة الحالة
+  provider: ^6.0.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/logo.png   # ✅ شعار التطبيق
-    - assets/images/           # لو حابب تضيف صور تانية لاحقاً
+    - assets/images/logo.png
+    - assets/images/
+
+# إعدادات أيقونة التطبيق
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo.png"
