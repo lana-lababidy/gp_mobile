@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
+import 'phone_screen.dart'; // ✅ انتبه تستورد شاشة PhoneScreen
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -49,11 +49,11 @@ class _SplashScreenState extends State<SplashScreen>
       _textController.forward();
     });
 
-    // الانتقال بعد 2.5 ثانية
-    Timer(const Duration(milliseconds: 2500), () {
+    // ✅ الانتقال بعد 4 ثواني إلى PhoneScreen
+    Timer(const Duration(seconds: 4), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => PhoneScreen()),
       );
     });
   }
