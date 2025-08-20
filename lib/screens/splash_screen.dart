@@ -29,7 +29,7 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // أنيميشن الشعار (تكبير + Fade)
+    // أنيميشن الشعار
     _logoController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1200));
     _logoScale = Tween<double>(begin: 0.6, end: 1.0).animate(
@@ -50,7 +50,7 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _textController, curve: Curves.easeIn),
     );
 
-    // توهج الشعار (Glow)
+    // توهج الشعار
     _glowController =
         AnimationController(vsync: this, duration: const Duration(seconds: 2))
           ..repeat(reverse: true);
@@ -132,7 +132,7 @@ class _SplashScreenState extends State<SplashScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // الشعار مع توهج
+                  // الشعار مع توهج + دائري
                   ScaleTransition(
                     scale: _logoScale,
                     child: FadeTransition(
@@ -158,9 +158,11 @@ class _SplashScreenState extends State<SplashScreen>
                               padding: const EdgeInsets.all(20.0),
                               child: Hero(
                                 tag: "app_logo",
-                                child: Image.asset(
-                                  'assets/images/logo.png',
-                                  fit: BoxFit.contain,
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    'assets/images/logo.png',
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                               ),
                             ),
