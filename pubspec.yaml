@@ -19,11 +19,8 @@ dependencies:
   # لاختيار الصور من المعرض
   image_picker: ^0.8.7+5
 
-  # لإدارة الحالة (State Management)
-  provider: ^6.0.5
-
-  # أي حزم أخرى قد تحتاجها أضفها هنا
-  # مثل http, shared_preferences...
+  # إدارة الحالة
+  provider: ^6.1.5
 
 dev_dependencies:
   flutter_test:
@@ -34,4 +31,5 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/  # إذا عندك صور أو أي أصول
+    - assets/images/logo.png   # ✅ شعار التطبيق
+    - assets/images/           # لو حابب تضيف صور تانية لاحقاً
