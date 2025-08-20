@@ -1,15 +1,17 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'controllers/cases_controller.dart';
 
+// الشاشات
+import 'screens/splash_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/cases_list_screen.dart';
 import 'screens/phone_screen.dart';
 import 'screens/otp_screen.dart';
 import 'screens/personal_info_screen.dart';
-import 'screens/cases_list_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/splash_screen.dart';
 
 void main() {
   runApp(
@@ -30,13 +32,14 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
 
+      // الثيم العام
       theme: ThemeData(
         useMaterial3: true,
         fontFamily: 'Arial',
         colorSchemeSeed: const Color(0xFF0A2A6C),
       ),
 
-      // دعم العربية
+      // دعم العربية وواجهة RTL
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -47,16 +50,17 @@ class MyApp extends StatelessWidget {
         Locale('en'),
       ],
 
-      // ابدأ بـ Splash
+      // ابدأ بـ SplashScreen
       home: const SplashScreen(),
 
-      // مساراتك الباقية إذا احتجتها بالتنقّل
+      // مسارات التطبيق
       routes: {
-        '/phone': (context) => PhoneScreen(),
-        '/otp': (context) => OtpScreen(),
-        '/personal-info': (context) => PersonalInfoPage(),
-        '/cases': (context) => const CasesListScreen(),
-        '/home': (context) => const HomeScreen(),
+        '/home': (context) => const HomeScreen(), // الرئيسية مع التبويبات
+        '/cases': (context) =>
+            const CasesListScreen(), // قائمة الحالات (مباشرة)
+        '/phone': (context) => PhoneScreen(), // شاشة الهاتف
+        '/otp': (context) => OtpScreen(), // شاشة OTP
+        '/personal-info': (context) => PersonalInfoPage(), // معلومات شخصية
       },
     );
   }
