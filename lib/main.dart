@@ -13,6 +13,9 @@ import 'screens/phone_screen.dart';
 import 'screens/otp_screen.dart';
 import 'screens/personal_info_screen.dart';
 
+// الحارس وحوار التأكيد
+import 'widgets/exit_guard.dart';
+
 void main() {
   runApp(
     MultiProvider(
@@ -50,15 +53,20 @@ class MyApp extends StatelessWidget {
         Locale('en'),
       ],
 
+      // لفّ كل الشاشات بحارس الخروج
+      builder: (context, child) => ExitGuard(
+        child: child ?? const SizedBox.shrink(),
+      ),
+
       // ابدأ بـ SplashScreen
       home: const SplashScreen(),
 
       // مسارات التطبيق
       routes: {
         '/home': (context) => const HomeScreen(), // الرئيسية مع التبويبات
-        '/cases': (context) =>
-            const CasesListScreen(), // قائمة الحالات (مباشرة)
-        '/phone': (context) => PhoneScreen(), // شاشة الهاتف
+        '/cases': (context) => const CasesListScreen(), // قائمة الحالات
+        '/phone': (context) =>
+            PhoneScreen(), // شاشة الهاتف (بدون const إذا مو ثابتة)
         '/otp': (context) => const OtpScreen(), // شاشة OTP
         '/personal-info': (context) =>
             const PersonalInfoPage(), // معلومات شخصية
