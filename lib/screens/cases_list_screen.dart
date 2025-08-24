@@ -115,7 +115,7 @@ class CasesListScreen extends StatelessWidget {
 class _FilterChip extends StatelessWidget {
   final String label;
   final CaseCategory cat;
-  const _FilterChip({required this.label, required this.cat, super.key});
+  const _FilterChip({required this.label, required this.cat});
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<CasesController>();

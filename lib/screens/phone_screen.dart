@@ -13,8 +13,8 @@ class PhoneScreen extends StatelessWidget {
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
-              SizedBox(height: 50),
-              Text(
+              const SizedBox(height: 50),
+              const Text(
                 "أهلاً بك",
                 style: TextStyle(
                   fontSize: 28,
@@ -22,21 +22,21 @@ class PhoneScreen extends StatelessWidget {
                   color: Colors.blue,
                 ),
               ),
-              SizedBox(height: 10),
-              Text(
+              const SizedBox(height: 10),
+              const Text(
                 "أدخل رقم الموبايل للحصول على رمز تأكيد",
                 style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
-              SizedBox(height: 40),
-              Align(
+              const SizedBox(height: 40),
+              const Align(
                 alignment: Alignment.centerRight,
                 child: Text("رقم الهاتف", style: TextStyle(fontSize: 14)),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.grey),
                       borderRadius: BorderRadius.circular(8),
@@ -47,13 +47,13 @@ class PhoneScreen extends StatelessWidget {
                           "https://flagcdn.com/w20/sy.png",
                           width: 24,
                         ),
-                        SizedBox(width: 4),
-                        Text("+963"),
-                        Icon(Icons.arrow_drop_down),
+                        const SizedBox(width: 4),
+                        const Text("+963"),
+                        const Icon(Icons.arrow_drop_down),
                       ],
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
                       controller: phoneController,
@@ -68,7 +68,7 @@ class PhoneScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(height: 30),
+              const SizedBox(height: 30),
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -77,7 +77,7 @@ class PhoneScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.pushNamed(context, '/otp');
                   },
-                  child: Text(
+                  child: const Text(
                     "إرسال رمز",
                     style: TextStyle(color: Colors.white, fontSize: 18),
                   ),

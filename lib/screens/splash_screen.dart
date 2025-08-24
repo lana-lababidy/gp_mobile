@@ -25,6 +25,9 @@ class _SplashScreenState extends State<SplashScreen>
 
   late AnimationController _bgController;
 
+  // نُولّد نقاط الجزيئات مرّة واحدة فقط
+  late final List<Offset> _particles;
+
   @override
   void initState() {
     super.initState();
@@ -33,48 +36,47 @@ class _SplashScreenState extends State<SplashScreen>
     _logoController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1200));
     _logoScale = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(parent: _logoController, curve: Curves.easeOutBack),
-    );
+        CurvedAnimation(parent: _logoController, curve: Curves.easeOutBack));
     _logoOpacity = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _logoController, curve: Curves.easeIn),
-    );
+        CurvedAnimation(parent: _logoController, curve: Curves.easeIn));
 
     // أنيميشن النصوص
     _textController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 800));
-    _textSlide =
-        Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
-      CurvedAnimation(parent: _textController, curve: Curves.easeOut),
-    );
+    _textSlide = Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero)
+        .animate(
+            CurvedAnimation(parent: _textController, curve: Curves.easeOut));
     _textOpacity = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _textController, curve: Curves.easeIn),
-    );
+        CurvedAnimation(parent: _textController, curve: Curves.easeIn));
 
-    // توهج الشعار
+    // توهّج الشعار
     _glowController =
         AnimationController(vsync: this, duration: const Duration(seconds: 2))
           ..repeat(reverse: true);
     _glow = Tween<double>(begin: 0, end: 15).animate(
-      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
-    );
+        CurvedAnimation(parent: _glowController, curve: Curves.easeInOut));
 
     // خلفية متدرجة متحركة
     _bgController =
         AnimationController(vsync: this, duration: const Duration(seconds: 6))
           ..repeat();
 
-    // تشغيل أنيميشن
-    _logoController.forward().then((_) {
-      _textController.forward();
-    });
+    // Particles: نقاط ثابتة (بدون وميض)
+    final rnd = Random(42);
+    _particles = List.generate(
+      20,
+      (_) => Offset(rnd.nextDouble(), rnd.nextDouble()), // نسبوية (0..1)
+    );
 
-    // بعد 5.5 ثانية → الانتقال
+    // تشغيل الأنيميشنات
+    _logoController.forward().then((_) => _textController.forward());
+
+    // الانتقال بعد 5.5 ثانية
     Timer(const Duration(milliseconds: 5500), () {
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => PhoneScreen(),
-        ),
+        MaterialPageRoute(builder: (_) => const PhoneScreen()),
       );
     });
   }
@@ -112,17 +114,23 @@ class _SplashScreenState extends State<SplashScreen>
         },
         child: Stack(
           children: [
-            // Particles بالخلفية
-            Positioned.fill(child: CustomPaint(painter: ParticlePainter())),
+            // الخلفية: Particles
+            Positioned.fill(
+              child: CustomPaint(
+                painter: ParticlePainterStatic(_particles),
+              ),
+            ),
 
             // الموجة بأسفل الشاشة
             Align(
               alignment: Alignment.bottomCenter,
               child: SizedBox(
                 height: 100,
-                child: CustomPaint(
-                  painter: WavePainter(_bgController.value),
-                  child: Container(),
+                child: AnimatedBuilder(
+                  animation: _bgController,
+                  builder: (_, __) => CustomPaint(
+                    painter: WavePainter(_bgController.value),
+                  ),
                 ),
               ),
             ),
@@ -132,7 +140,7 @@ class _SplashScreenState extends State<SplashScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // الشعار مع توهج + دائري
+                  // الشعار: دائري + إطار + ظل + توهّج
                   ScaleTransition(
                     scale: _logoScale,
                     child: FadeTransition(
@@ -145,22 +153,33 @@ class _SplashScreenState extends State<SplashScreen>
                             height: 150,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.15),
+                              color: Colors.white.withOpacity(0.10),
+                              border: Border.all(
+                                color: Colors.blueAccent,
+                                width: 4,
+                              ),
                               boxShadow: [
+                                // ظل ناعم
                                 BoxShadow(
-                                  color: Colors.white.withOpacity(0.6),
+                                  color: Colors.black26,
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
+                                ),
+                                // توهّج أبيض خفيف متغيّر
+                                BoxShadow(
+                                  color: Colors.white.withOpacity(0.55),
                                   blurRadius: _glow.value,
                                   spreadRadius: _glow.value / 2,
-                                )
+                                ),
                               ],
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(20.0),
+                              padding: const EdgeInsets.all(14.0),
                               child: Hero(
-                                tag: "app_logo",
+                                tag: 'app_logo',
                                 child: ClipOval(
                                   child: Image.asset(
-                                    'assets/images/logo.png',
+                                    'assets/images/abshir_logo.png', // تأكّد من المسار
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -171,46 +190,48 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 20),
 
-                  // النصوص مع شيمر
+                  // النصوص + شيمر
                   SlideTransition(
                     position: _textSlide,
                     child: FadeTransition(
                       opacity: _textOpacity,
                       child: ShaderMask(
+                        blendMode: BlendMode.srcIn,
                         shaderCallback: (rect) {
                           return LinearGradient(
-                            colors: [
+                            colors: const [
                               Colors.white,
                               Colors.white70,
                               Colors.white
                             ],
-                            stops: [0.1, 0.5, 0.9],
+                            stops: const [0.1, 0.5, 0.9],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             transform:
                                 GradientRotation(2 * pi * _bgController.value),
                           ).createShader(rect);
                         },
-                        child: Column(
-                          children: const [
+                        child: const Column(
+                          children: [
                             Text(
-                              "ABSHIR",
+                              'ABSHIR',
+                              textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
                                 letterSpacing: 2,
                               ),
                             ),
                             SizedBox(height: 8),
                             Text(
-                              "أبشر - معك خطوة بخطوة",
+                              'أبشر - معك خطوة بخطوة',
+                              textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.white70,
-                                fontFamily: 'Cairo',
+                                // إذا عندك خط Cairo ضيفه بالـ pubspec.yaml
                               ),
                             ),
                           ],
@@ -218,9 +239,10 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 30),
 
-                  // شريط تقدم خطي
+                  // شريط تقدم
                   SizedBox(
                     width: 120,
                     child: TweenAnimationBuilder<double>(
@@ -243,7 +265,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-// 🎨 رسام الموجة
+/* 🎨 رسام الموجة */
 class WavePainter extends CustomPainter {
   final double progress;
   WavePainter(this.progress);
@@ -254,7 +276,7 @@ class WavePainter extends CustomPainter {
     final path = Path();
 
     for (double i = 0; i <= size.width; i++) {
-      double y = sin((i / size.width * 2 * pi) + (progress * 2 * pi)) * 10 + 20;
+      final y = sin((i / size.width * 2 * pi) + (progress * 2 * pi)) * 10 + 20;
       if (i == 0) {
         path.moveTo(i, size.height - y);
       } else {
@@ -269,23 +291,25 @@ class WavePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant WavePainter oldDelegate) => true;
+  bool shouldRepaint(covariant WavePainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
 
-// 🎨 رسام الجزيئات (Particles)
-class ParticlePainter extends CustomPainter {
-  final Random random = Random();
+/* 🎨 رسام الجزيئات (Particles) بنقاط ثابتة */
+class ParticlePainterStatic extends CustomPainter {
+  final List<Offset> points01; // نقاط بنسبة (0..1) من الحجم
+  ParticlePainterStatic(this.points01);
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = Colors.white24;
-    for (int i = 0; i < 20; i++) {
-      final dx = random.nextDouble() * size.width;
-      final dy = random.nextDouble() * size.height;
-      canvas.drawCircle(Offset(dx, dy), random.nextDouble() * 2 + 1, paint);
+    for (final p in points01) {
+      final dx = p.dx * size.width;
+      final dy = p.dy * size.height;
+      canvas.drawCircle(Offset(dx, dy), 2, paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -59,8 +59,9 @@ class MyApp extends StatelessWidget {
         '/cases': (context) =>
             const CasesListScreen(), // قائمة الحالات (مباشرة)
         '/phone': (context) => PhoneScreen(), // شاشة الهاتف
-        '/otp': (context) => OtpScreen(), // شاشة OTP
-        '/personal-info': (context) => PersonalInfoPage(), // معلومات شخصية
+        '/otp': (context) => const OtpScreen(), // شاشة OTP
+        '/personal-info': (context) =>
+            const PersonalInfoPage(), // معلومات شخصية
       },
     );
   }

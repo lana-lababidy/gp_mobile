@@ -268,8 +268,8 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                     padding: EdgeInsets.zero,
                   ).copyWith(
                     backgroundColor:
-                        MaterialStateProperty.resolveWith((states) => null),
-                    foregroundColor: MaterialStateProperty.all(Colors.white),
+                        WidgetStateProperty.resolveWith((states) => null),
+                    foregroundColor: WidgetStateProperty.all(Colors.white),
                   ),
                   onPressed: () {
                     // انتقال إلى واجهة HomeScreen بدل الطباعة

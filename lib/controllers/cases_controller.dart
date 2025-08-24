@@ -8,8 +8,9 @@ class CasesController extends ChangeNotifier {
 
   List<CaseModel> get cases {
     Iterable<CaseModel> res = _cases;
-    if (_filter != CaseCategory.all)
+    if (_filter != CaseCategory.all) {
       res = res.where((c) => c.category == _filter);
+    }
     if (_query.isNotEmpty) res = res.where((c) => c.title.contains(_query));
     return res.toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
