@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -16,19 +17,31 @@ class _SplashScreenState extends State<SplashScreen>
   late final Animation<double> _scale;
 
   final Color _brand = const Color(0xFF0A2A6C);
+  static const String kLogoPath = 'assets/images/abshir_logo.png';
 
   @override
   void initState() {
     super.initState();
     _c = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
+        vsync: this, duration: const Duration(milliseconds: 1200));
     _fade = CurvedAnimation(parent: _c, curve: Curves.easeOut);
     _scale = Tween<double>(begin: 0.92, end: 1.0)
         .animate(CurvedAnimation(parent: _c, curve: Curves.easeOutBack));
 
     _c.forward();
+
+    // ✅ تشخيص الأصول بعد أول فريم
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _debugCheckAsset();
+      // جرّب تحميل الصورة مسبقاً (رح يطبع خطأ لو فشل)
+      try {
+        await precacheImage(const AssetImage(kLogoPath), context);
+        debugPrint('✅ precacheImage OK for $kLogoPath');
+      } catch (e, st) {
+        debugPrint('❌ precacheImage FAILED for $kLogoPath → $e');
+        debugPrint(st.toString());
+      }
+    });
 
     // انتقال للهوم
     Timer(const Duration(milliseconds: 1800), () {
@@ -42,6 +55,20 @@ class _SplashScreenState extends State<SplashScreen>
         ),
       );
     });
+  }
+
+  Future<void> _debugCheckAsset() async {
+    try {
+      final manifest = await rootBundle.loadString('AssetManifest.json');
+      if (manifest.contains(kLogoPath)) {
+        debugPrint('✅ AssetManifest يحتوي: $kLogoPath');
+      } else {
+        debugPrint(
+            '❌ AssetManifest لا يحتوي: $kLogoPath — راجع pubspec.yaml والمسار');
+      }
+    } catch (e) {
+      debugPrint('❌ فشل قراءة AssetManifest.json → $e');
+    }
   }
 
   @override
@@ -59,10 +86,7 @@ class _SplashScreenState extends State<SplashScreen>
         backgroundColor: bg,
         body: Stack(
           children: [
-            // موجة خفيفة بالأسفل
             const _BottomWave(),
-
-            // المحتوى الأساسي
             Center(
               child: FadeTransition(
                 opacity: _fade,
@@ -71,7 +95,7 @@ class _SplashScreenState extends State<SplashScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // ✅ شعار من assets + errorBuilder
+                      // الشعار من assets + errorBuilder
                       Container(
                         width: 110,
                         height: 110,
@@ -94,24 +118,19 @@ class _SplashScreenState extends State<SplashScreen>
                           padding: const EdgeInsets.all(10),
                           child: ClipOval(
                             child: Image.asset(
-                              'assets/images/abshir_logo.png',
+                              kLogoPath,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
-                                debugPrint('🚨 خطأ تحميل الصورة: $error');
-                                return const Icon(
-                                  Icons.broken_image,
-                                  size: 48,
-                                  color: Colors.red,
-                                );
+                                debugPrint(
+                                    '🚨 خطأ تحميل الصورة ($kLogoPath): $error');
+                                return const Icon(Icons.broken_image,
+                                    size: 48, color: Colors.red);
                               },
                             ),
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 20),
-
-                      // اسم التطبيق
                       TweenAnimationBuilder<double>(
                         tween: Tween(begin: 8, end: 1),
                         duration: const Duration(milliseconds: 900),
@@ -138,10 +157,7 @@ class _SplashScreenState extends State<SplashScreen>
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-
                       const SizedBox(height: 24),
-
-                      // خط تقدم رفيع
                       _ProgressLine(color: Colors.white.withValues(alpha: 0.9)),
                     ],
                   ),
@@ -155,7 +171,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-// خط تقدم رفيع متحرك
+// خط تقدم
 class _ProgressLine extends StatefulWidget {
   final Color color;
   const _ProgressLine({required this.color});
@@ -173,9 +189,8 @@ class _ProgressLineState extends State<_ProgressLine>
   void initState() {
     super.initState();
     _c = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
+        vsync: this, duration: const Duration(milliseconds: 1200))
+      ..repeat(reverse: true);
     _anim = CurvedAnimation(parent: _c, curve: Curves.easeInOut);
   }
 
@@ -205,7 +220,7 @@ class _ProgressLineState extends State<_ProgressLine>
   }
 }
 
-// موجة زخرفية بأسفل الشاشة
+// موجة زخرفية
 class _BottomWave extends StatelessWidget {
   const _BottomWave();
 
@@ -221,11 +236,7 @@ class _BottomWave extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0x22000000),
-                Color(0x11000000),
-                Color(0x00000000),
-              ],
+              colors: [Color(0x22000000), Color(0x11000000), Color(0x00000000)],
             ),
           ),
         ),
@@ -241,17 +252,9 @@ class _WaveClipper extends CustomClipper<Path> {
     p.lineTo(0, 0);
     p.lineTo(0, size.height * .4);
     p.quadraticBezierTo(
-      size.width * .25,
-      size.height * .65,
-      size.width * .5,
-      size.height * .4,
-    );
+        size.width * .25, size.height * .65, size.width * .5, size.height * .4);
     p.quadraticBezierTo(
-      size.width * .75,
-      size.height * .15,
-      size.width,
-      size.height * .35,
-    );
+        size.width * .75, size.height * .15, size.width, size.height * .35);
     p.lineTo(size.width, 0);
     p.close();
     return p;
