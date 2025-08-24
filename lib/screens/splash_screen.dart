@@ -1,7 +1,7 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'home_screen.dart';
+import 'phone_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -11,157 +11,229 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c;
-  late final Animation<double> _fade;
-  late final Animation<double> _scale;
+    with TickerProviderStateMixin {
+  late AnimationController _logoController;
+  late Animation<double> _logoScale;
+  late Animation<double> _logoOpacity;
 
-  final Color _brand = const Color(0xFF0A2A6C);
-  static const String kLogoPath = 'assets/images/abshir_logo.png';
+  late AnimationController _textController;
+  late Animation<Offset> _textSlide;
+  late Animation<double> _textOpacity;
+
+  late AnimationController _glowController;
+  late Animation<double> _glow;
+
+  late AnimationController _bgController;
 
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(
+
+    // أنيميشن الشعار
+    _logoController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1200));
-    _fade = CurvedAnimation(parent: _c, curve: Curves.easeOut);
-    _scale = Tween<double>(begin: 0.92, end: 1.0)
-        .animate(CurvedAnimation(parent: _c, curve: Curves.easeOutBack));
+    _logoScale = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(parent: _logoController, curve: Curves.easeOutBack),
+    );
+    _logoOpacity = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _logoController, curve: Curves.easeIn),
+    );
 
-    _c.forward();
+    // أنيميشن النصوص
+    _textController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 800));
+    _textSlide =
+        Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
+      CurvedAnimation(parent: _textController, curve: Curves.easeOut),
+    );
+    _textOpacity = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _textController, curve: Curves.easeIn),
+    );
 
-    // ✅ تشخيص الأصول بعد أول فريم
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _debugCheckAsset();
-      // جرّب تحميل الصورة مسبقاً (رح يطبع خطأ لو فشل)
-      try {
-        await precacheImage(const AssetImage(kLogoPath), context);
-        debugPrint('✅ precacheImage OK for $kLogoPath');
-      } catch (e, st) {
-        debugPrint('❌ precacheImage FAILED for $kLogoPath → $e');
-        debugPrint(st.toString());
-      }
+    // توهج الشعار
+    _glowController =
+        AnimationController(vsync: this, duration: const Duration(seconds: 2))
+          ..repeat(reverse: true);
+    _glow = Tween<double>(begin: 0, end: 15).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    );
+
+    // خلفية متدرجة متحركة
+    _bgController =
+        AnimationController(vsync: this, duration: const Duration(seconds: 6))
+          ..repeat();
+
+    // تشغيل أنيميشن
+    _logoController.forward().then((_) {
+      _textController.forward();
     });
 
-    // انتقال للهوم
-    Timer(const Duration(milliseconds: 1800), () {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 500),
-          pageBuilder: (_, __, ___) => const HomeScreen(initialIndex: 0),
-          transitionsBuilder: (_, anim, __, child) =>
-              FadeTransition(opacity: anim, child: child),
+    // بعد 5.5 ثانية → الانتقال
+    Timer(const Duration(milliseconds: 5500), () {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PhoneScreen(),
         ),
       );
     });
   }
 
-  Future<void> _debugCheckAsset() async {
-    try {
-      final manifest = await rootBundle.loadString('AssetManifest.json');
-      if (manifest.contains(kLogoPath)) {
-        debugPrint('✅ AssetManifest يحتوي: $kLogoPath');
-      } else {
-        debugPrint(
-            '❌ AssetManifest لا يحتوي: $kLogoPath — راجع pubspec.yaml والمسار');
-      }
-    } catch (e) {
-      debugPrint('❌ فشل قراءة AssetManifest.json → $e');
-    }
-  }
-
   @override
   void dispose() {
-    _c.dispose();
+    _logoController.dispose();
+    _textController.dispose();
+    _glowController.dispose();
+    _bgController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final bg = _brand;
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: bg,
-        body: Stack(
+    return Scaffold(
+      body: AnimatedBuilder(
+        animation: _bgController,
+        builder: (context, child) {
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [
+                  Color.lerp(const Color(0xFF0A2A6C), const Color(0xFF2F66D4),
+                      _bgController.value)!,
+                  Color.lerp(const Color(0xFF2F66D4), const Color(0xFF0A2A6C),
+                      _bgController.value)!,
+                ],
+              ),
+            ),
+            child: child,
+          );
+        },
+        child: Stack(
           children: [
-            const _BottomWave(),
+            // Particles بالخلفية
+            Positioned.fill(child: CustomPaint(painter: ParticlePainter())),
+
+            // الموجة بأسفل الشاشة
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                height: 100,
+                child: CustomPaint(
+                  painter: WavePainter(_bgController.value),
+                  child: Container(),
+                ),
+              ),
+            ),
+
+            // المحتوى الأساسي
             Center(
-              child: FadeTransition(
-                opacity: _fade,
-                child: ScaleTransition(
-                  scale: _scale,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // الشعار من assets + errorBuilder
-                      Container(
-                        width: 110,
-                        height: 110,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.10),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.65),
-                            width: 3.5,
-                          ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 12,
-                              offset: Offset(0, 6),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // الشعار مع توهج + دائري
+                  ScaleTransition(
+                    scale: _logoScale,
+                    child: FadeTransition(
+                      opacity: _logoOpacity,
+                      child: AnimatedBuilder(
+                        animation: _glow,
+                        builder: (context, _) {
+                          return Container(
+                            width: 150,
+                            height: 150,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.15),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.white.withOpacity(0.6),
+                                  blurRadius: _glow.value,
+                                  spreadRadius: _glow.value / 2,
+                                )
+                              ],
                             ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: ClipOval(
-                            child: Image.asset(
-                              kLogoPath,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                debugPrint(
-                                    '🚨 خطأ تحميل الصورة ($kLogoPath): $error');
-                                return const Icon(Icons.broken_image,
-                                    size: 48, color: Colors.red);
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 8, end: 1),
-                        duration: const Duration(milliseconds: 900),
-                        curve: Curves.easeOut,
-                        builder: (_, value, __) {
-                          return Text(
-                            'ABSHIR',
-                            style: TextStyle(
-                              letterSpacing: value,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 32,
-                              color: Colors.white,
+                            child: Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: Hero(
+                                tag: "app_logo",
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    'assets/images/logo.png',
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
                             ),
                           );
                         },
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'أبشر',
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontSize: 18,
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // النصوص مع شيمر
+                  SlideTransition(
+                    position: _textSlide,
+                    child: FadeTransition(
+                      opacity: _textOpacity,
+                      child: ShaderMask(
+                        shaderCallback: (rect) {
+                          return LinearGradient(
+                            colors: const [
+                              Colors.white,
+                              Colors.white70,
+                              Colors.white
+                            ],
+                            stops: const [0.1, 0.5, 0.9],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            transform:
+                                GradientRotation(2 * pi * _bgController.value),
+                          ).createShader(rect);
+                        },
+                        child: const Column(
+                          children: [
+                            Text(
+                              "ABSHIR",
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              "أبشر - معك خطوة بخطوة",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white70,
+                                fontFamily: 'Cairo',
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      _ProgressLine(color: Colors.white.withValues(alpha: 0.9)),
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 30),
+
+                  // شريط تقدم خطي
+                  SizedBox(
+                    width: 120,
+                    child: TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 5500),
+                      tween: Tween(begin: 0, end: 1),
+                      builder: (context, value, _) => LinearProgressIndicator(
+                        value: value,
+                        color: Colors.white,
+                        backgroundColor: Colors.white24,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -171,95 +243,49 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-// خط تقدم
-class _ProgressLine extends StatefulWidget {
-  final Color color;
-  const _ProgressLine({required this.color});
+// 🎨 رسام الموجة
+class WavePainter extends CustomPainter {
+  final double progress;
+  WavePainter(this.progress);
 
   @override
-  State<_ProgressLine> createState() => _ProgressLineState();
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.white.withOpacity(0.2);
+    final path = Path();
+
+    for (double i = 0; i <= size.width; i++) {
+      double y = sin((i / size.width * 2 * pi) + (progress * 2 * pi)) * 10 + 20;
+      if (i == 0) {
+        path.moveTo(i, size.height - y);
+      } else {
+        path.lineTo(i, size.height - y);
+      }
+    }
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant WavePainter oldDelegate) => true;
 }
 
-class _ProgressLineState extends State<_ProgressLine>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c;
-  late final Animation<double> _anim;
+// 🎨 رسام الجزيئات (Particles)
+class ParticlePainter extends CustomPainter {
+  final Random random = Random();
 
   @override
-  void initState() {
-    super.initState();
-    _c = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1200))
-      ..repeat(reverse: true);
-    _anim = CurvedAnimation(parent: _c, curve: Curves.easeInOut);
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.white24;
+    for (int i = 0; i < 20; i++) {
+      final dx = random.nextDouble() * size.width;
+      final dy = random.nextDouble() * size.height;
+      canvas.drawCircle(Offset(dx, dy), random.nextDouble() * 2 + 1, paint);
+    }
   }
 
   @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _anim,
-      builder: (_, __) {
-        final w =
-            MediaQuery.of(context).size.width * (0.25 + 0.55 * _anim.value);
-        return Container(
-          width: w,
-          height: 4,
-          decoration: BoxDecoration(
-            color: widget.color,
-            borderRadius: BorderRadius.circular(999),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// موجة زخرفية
-class _BottomWave extends StatelessWidget {
-  const _BottomWave();
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: ClipPath(
-        clipper: _WaveClipper(),
-        child: Container(
-          height: 180,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0x22000000), Color(0x11000000), Color(0x00000000)],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WaveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final p = Path();
-    p.lineTo(0, 0);
-    p.lineTo(0, size.height * .4);
-    p.quadraticBezierTo(
-        size.width * .25, size.height * .65, size.width * .5, size.height * .4);
-    p.quadraticBezierTo(
-        size.width * .75, size.height * .15, size.width, size.height * .35);
-    p.lineTo(size.width, 0);
-    p.close();
-    return p;
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
