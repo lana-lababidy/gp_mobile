@@ -25,7 +25,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   late AnimationController _bgController;
 
-  // نُولّد نقاط الجزيئات مرّة واحدة فقط
+  // نقاط الجزيئات تتولّد مرة واحدة
   late final List<Offset> _particles;
 
   @override
@@ -61,22 +61,22 @@ class _SplashScreenState extends State<SplashScreen>
         AnimationController(vsync: this, duration: const Duration(seconds: 6))
           ..repeat();
 
-    // Particles: نقاط ثابتة (بدون وميض)
+    // نقاط Particles ثابتة
     final rnd = Random(42);
     _particles = List.generate(
       20,
-      (_) => Offset(rnd.nextDouble(), rnd.nextDouble()), // نسبوية (0..1)
+      (_) => Offset(rnd.nextDouble(), rnd.nextDouble()),
     );
 
     // تشغيل الأنيميشنات
     _logoController.forward().then((_) => _textController.forward());
 
-    // الانتقال بعد 5.5 ثانية
+    // الانتقال بعد 5.5 ثانية — بدون const
     Timer(const Duration(milliseconds: 5500), () {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const PhoneScreen()),
+        MaterialPageRoute(builder: (_) => PhoneScreen()),
       );
     });
   }
@@ -165,7 +165,7 @@ class _SplashScreenState extends State<SplashScreen>
                                   blurRadius: 12,
                                   offset: const Offset(0, 6),
                                 ),
-                                // توهّج أبيض خفيف متغيّر
+                                // توهّج أبيض متغيّر
                                 BoxShadow(
                                   color: Colors.white.withOpacity(0.55),
                                   blurRadius: _glow.value,
@@ -179,7 +179,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 tag: 'app_logo',
                                 child: ClipOval(
                                   child: Image.asset(
-                                    'assets/images/abshir_logo.png', // تأكّد من المسار
+                                    'assets/images/abshir_logo.png', // عدّل المسار إذا لزم
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -231,7 +231,6 @@ class _SplashScreenState extends State<SplashScreen>
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 16,
-                                // إذا عندك خط Cairo ضيفه بالـ pubspec.yaml
                               ),
                             ),
                           ],
