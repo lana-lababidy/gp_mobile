@@ -153,21 +153,21 @@ class _SplashScreenState extends State<SplashScreen>
                             height: 150,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.10),
+                              color: Colors.white.withValues(alpha: 0.10),
                               border: Border.all(
                                 color: Colors.blueAccent,
                                 width: 4,
                               ),
                               boxShadow: [
                                 // ظل ناعم
-                                BoxShadow(
+                                const BoxShadow(
                                   color: Colors.black26,
                                   blurRadius: 12,
-                                  offset: const Offset(0, 6),
+                                  offset: Offset(0, 6),
                                 ),
                                 // توهّج أبيض متغيّر
                                 BoxShadow(
-                                  color: Colors.white.withOpacity(0.55),
+                                  color: Colors.white.withValues(alpha: 0.55),
                                   blurRadius: _glow.value,
                                   spreadRadius: _glow.value / 2,
                                 ),
@@ -179,7 +179,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 tag: 'app_logo',
                                 child: ClipOval(
                                   child: Image.asset(
-                                    'assets/images/abshir_logo.png', // عدّل المسار إذا لزم
+                                    'assets/images/abshir_logo.png', // عدّل الاسم إذا لزم
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -271,7 +271,7 @@ class WavePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white.withOpacity(0.2);
+    final paint = Paint()..color = Colors.white.withValues(alpha: 0.2);
     final path = Path();
 
     for (double i = 0; i <= size.width; i++) {
@@ -297,11 +297,11 @@ class WavePainter extends CustomPainter {
 /* 🎨 رسام الجزيئات (Particles) بنقاط ثابتة */
 class ParticlePainterStatic extends CustomPainter {
   final List<Offset> points01; // نقاط بنسبة (0..1) من الحجم
-  ParticlePainterStatic(this.points01);
+  const ParticlePainterStatic(this.points01);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white24;
+    final paint = Paint()..color = Colors.white24; // ثابتة، تمام
     for (final p in points01) {
       final dx = p.dx * size.width;
       final dy = p.dy * size.height;
