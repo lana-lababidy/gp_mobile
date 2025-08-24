@@ -32,8 +32,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/logo.png
-    - assets/images/
+    - assets/images/   # تحميل كل الصور داخل المجلد
 
 # إعدادات أيقونة التطبيق
 flutter_icons:
