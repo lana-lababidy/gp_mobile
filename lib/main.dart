@@ -16,10 +16,25 @@ import 'screens/personal_info_screen.dart';
 // الحارس وحوار التأكيد
 import 'widgets/exit_guard.dart';
 
+// ------- API -------
+import 'api/dio_client.dart';
+import 'api/auth_api.dart';
+
 void main() {
+  // Base URL للمحاكي أندرويد (يفتح على localhost جهازك)
+  const String kBaseUrl = 'http://10.0.2.2:8000/api';
+
+  // نجهّز DioClient مرة وحدة للتطبيق كله
+  final dioClient = DioClient(baseUrl: kBaseUrl);
+
   runApp(
     MultiProvider(
       providers: [
+        // مزوّدات الـ API
+        Provider<DioClient>.value(value: dioClient),
+        Provider<AuthApi>(create: (_) => AuthApi(dioClient)),
+
+        // مزوّداتك الحالية
         ChangeNotifierProvider(create: (_) => CasesController()),
       ],
       child: const MyApp(),
@@ -65,8 +80,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/home': (context) => const HomeScreen(), // الرئيسية مع التبويبات
         '/cases': (context) => const CasesListScreen(), // قائمة الحالات
-        '/phone': (context) =>
-            PhoneScreen(), // شاشة الهاتف (بدون const إذا مو ثابتة)
+        '/phone': (context) => const PhoneScreen(), // شاشة الهاتف
         '/otp': (context) => const OtpScreen(), // شاشة OTP
         '/personal-info': (context) =>
             const PersonalInfoPage(), // معلومات شخصية
