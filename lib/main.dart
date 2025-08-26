@@ -12,6 +12,7 @@ import 'screens/cases_list_screen.dart';
 import 'screens/phone_screen.dart';
 import 'screens/otp_screen.dart';
 import 'screens/personal_info_screen.dart';
+import 'screens/api_test_screen.dart'; // ✅ شاشة الاختبار
 
 // الحارس وحوار التأكيد
 import 'widgets/exit_guard.dart';
@@ -73,8 +74,8 @@ class MyApp extends StatelessWidget {
         child: child ?? const SizedBox.shrink(),
       ),
 
-      // ابدأ بـ SplashScreen
-      home: SplashScreen(),
+      // ✅ مؤقتًا نبدأ باختبار API
+      home: ApiTestScreen(),
 
       // مسارات التطبيق
       routes: {
@@ -83,6 +84,7 @@ class MyApp extends StatelessWidget {
         '/phone': (context) => PhoneScreen(), // شاشة الهاتف
         '/otp': (context) => OtpScreen(), // شاشة OTP
         '/personal-info': (context) => PersonalInfoPage(), // معلومات شخصية
+        '/apitest': (context) => ApiTestScreen(), // ✅ شاشة اختبار الاتصال
       },
     );
   }
