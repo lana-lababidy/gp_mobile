@@ -74,16 +74,15 @@ class MyApp extends StatelessWidget {
       ),
 
       // ابدأ بـ SplashScreen
-      home: const SplashScreen(),
+      home: SplashScreen(),
 
       // مسارات التطبيق
       routes: {
-        '/home': (context) => const HomeScreen(), // الرئيسية مع التبويبات
-        '/cases': (context) => const CasesListScreen(), // قائمة الحالات
-        '/phone': (context) => const PhoneScreen(), // شاشة الهاتف
-        '/otp': (context) => const OtpScreen(), // شاشة OTP
-        '/personal-info': (context) =>
-            const PersonalInfoPage(), // معلومات شخصية
+        '/home': (context) => HomeScreen(), // الرئيسية مع التبويبات
+        '/cases': (context) => CasesListScreen(), // قائمة الحالات
+        '/phone': (context) => PhoneScreen(), // شاشة الهاتف
+        '/otp': (context) => OtpScreen(), // شاشة OTP
+        '/personal-info': (context) => PersonalInfoPage(), // معلومات شخصية
       },
     );
   }
