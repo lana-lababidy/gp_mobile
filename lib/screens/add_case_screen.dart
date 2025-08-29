@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
-import '../models/case_model.dart'; // يحتوي على enum CaseCategory (money, inKind, physicalEffort)
+import 'package:flutter/services.dart'; // للأرقام فقط
+import '../models/case_model.dart'; // CaseCategory: money, inKind, physicalEffort
 
 class AddCaseScreen extends StatefulWidget {
   const AddCaseScreen({super.key});
@@ -17,7 +17,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
   // الحقول
   final TextEditingController _titleCtrl = TextEditingController();
   final TextEditingController _targetPointsCtrl =
-      TextEditingController(text: '10000');
+      TextEditingController(); // ← بدون 10000
 
   CaseCategory? _category;
   File? _pickedImage;
@@ -72,7 +72,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // ✅ إضافة صورة (بدل رابط صورة اختياري)
+                // إضافة صورة
                 Text('إضافة صورة',
                     style: TextStyle(color: Colors.grey.shade700)),
                 const SizedBox(height: 6),
@@ -99,14 +99,17 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                           )
                         : ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.file(_pickedImage!,
-                                fit: BoxFit.cover, width: double.infinity),
+                            child: Image.file(
+                              _pickedImage!,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                            ),
                           ),
                   ),
                 ),
                 const SizedBox(height: 12),
 
-                // ✅ تصنيف الحالة (Dropdown)
+                // تصنيف الحالة
                 DropdownButtonFormField<CaseCategory>(
                   value: _category,
                   decoration: _dec('تصنيف الحالة'),
@@ -130,17 +133,25 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // ✅ عدد النقاط المطلوب (بدل الهدف)
+                // ✅ عنوان فوق مربع النص + حقل فارغ للأرقام فقط
+                const Text(
+                  'عدد النقاط المطلوب',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
                 TextFormField(
                   controller: _targetPointsCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: _dec('عدد النقاط المطلوب (مثلاً 10000)'),
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: _dec('اكتب العدد (مثلاً 10000)'),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty)
+                    if (v == null || v.trim().isEmpty) {
                       return 'أدخل عدد النقاط المطلوب';
+                    }
                     final n = int.tryParse(v);
-                    if (n == null || n <= 0)
+                    if (n == null || n <= 0) {
                       return 'أدخل رقمًا صحيحًا أكبر من الصفر';
+                    }
                     return null;
                   },
                 ),
@@ -156,11 +167,11 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                     onPressed: () {
                       if (!(_formKey.currentState?.validate() ?? false)) return;
 
-                      // TODO: هنا بتقدر ترسل البيانات للكنترولر/الباك:
+                      // TODO: إرسال البيانات للكنترولر/الباك:
                       // - العنوان: _titleCtrl.text
                       // - التصنيف: _category
                       // - عدد النقاط: int.parse(_targetPointsCtrl.text)
-                      // - الصورة المختارة: _pickedImage (إن وُجدت)
+                      // - الصورة: _pickedImage (إن وُجدت)
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -178,13 +189,13 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
             ),
           ),
         ),
-        bottomNavigationBar: _DummyBottomBar(), // للإبقاء على شكل الصورة عندك
+        bottomNavigationBar: _DummyBottomBar(),
       ),
     );
   }
 }
 
-// شريط سفلي شكلي مثل المعروض في لقطة الشاشة
+// شريط سفلي شكلي مثل لقطة الشاشة
 class _DummyBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
