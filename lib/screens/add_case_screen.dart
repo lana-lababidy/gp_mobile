@@ -1,9 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 
-import '../controllers/cases_controller.dart';
-import '../models/case_model.dart';
-import 'home_screen.dart'; // للرجوع مع اختيار تبويب "الحالات"
+import '../models/case_model.dart'; // يحتوي على enum CaseCategory (money, inKind, physicalEffort)
 
 class AddCaseScreen extends StatefulWidget {
   const AddCaseScreen({super.key});
@@ -14,64 +13,39 @@ class AddCaseScreen extends StatefulWidget {
 
 class _AddCaseScreenState extends State<AddCaseScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleCtrl = TextEditingController();
-  final _imageUrlCtrl = TextEditingController();
-  final _goalCtrl = TextEditingController(text: '10000');
-  final _raisedCtrl = TextEditingController(text: '0');
-  CaseCategory _category = CaseCategory.money;
 
-  Color get _brand => const Color(0xFF0A2A6C);
+  // الحقول
+  final TextEditingController _titleCtrl = TextEditingController();
+  final TextEditingController _targetPointsCtrl =
+      TextEditingController(text: '10000');
+
+  CaseCategory? _category;
+  File? _pickedImage;
 
   @override
   void dispose() {
     _titleCtrl.dispose();
-    _imageUrlCtrl.dispose();
-    _goalCtrl.dispose();
-    _raisedCtrl.dispose();
+    _targetPointsCtrl.dispose();
     super.dispose();
   }
 
-  InputDecoration _input(String label) => InputDecoration(
-        labelText: label,
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final x = await picker.pickImage(source: ImageSource.gallery);
+    if (x != null) setState(() => _pickedImage = File(x.path));
+  }
+
+  InputDecoration _dec(String hint) => InputDecoration(
+        hintText: hint,
         filled: true,
         fillColor: Colors.grey.shade100,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
       );
-
-  void _save() {
-    if (_formKey.currentState?.validate() != true) return;
-
-    final item = CaseModel(
-      id: UniqueKey().toString(),
-      title: _titleCtrl.text.trim(),
-      imageUrl:
-          _imageUrlCtrl.text.trim().isEmpty ? null : _imageUrlCtrl.text.trim(),
-      createdAt: DateTime.now(),
-      category: _category,
-      goal: double.tryParse(_goalCtrl.text.trim()) ?? 0,
-      raised: double.tryParse(_raisedCtrl.text.trim()) ?? 0,
-    );
-
-    // حفظ الحالة في الـProvider
-    context.read<CasesController>().addCase(item);
-
-    // إشعار نجاح بسيط
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تمت إضافة الحالة بنجاح')),
-    );
-
-    // ✅ ارجع إلى HomeScreen وحدد تبويب "الحالات" (index = 1)
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 1)),
-      (route) => false,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,88 +53,151 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: _brand,
-          title:
-              const Text('إضافة حالة', style: TextStyle(color: Colors.white)),
+          title: const Text('إضافة حالة'),
           centerTitle: true,
-          iconTheme: const IconThemeData(color: Colors.white),
         ),
-        body: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              TextFormField(
-                controller: _titleCtrl,
-                decoration: _input('عنوان الحالة'),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'العنوان مطلوب' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _imageUrlCtrl,
-                decoration: _input('رابط الصورة (اختياري)'),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<CaseCategory>(
-                value: _category,
-                decoration: _input('التصنيف'),
-                items: const [
-                  DropdownMenuItem(
-                      value: CaseCategory.money, child: Text('أموال')),
-                  DropdownMenuItem(
-                      value: CaseCategory.inKind, child: Text('تبرعات عينية')),
-                  DropdownMenuItem(
+        body: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // عنوان الحالة
+                TextFormField(
+                  controller: _titleCtrl,
+                  decoration: _dec('عنوان الحالة'),
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'أدخل عنوان الحالة'
+                      : null,
+                ),
+                const SizedBox(height: 12),
+
+                // ✅ إضافة صورة (بدل رابط صورة اختياري)
+                Text('إضافة صورة',
+                    style: TextStyle(color: Colors.grey.shade700)),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: Container(
+                    height: 140,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: _pickedImage == null
+                        ? Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(Icons.add_photo_alternate_outlined,
+                                    size: 36),
+                                SizedBox(height: 6),
+                                Text('اضغط لاختيار صورة من المعرض'),
+                              ],
+                            ),
+                          )
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(_pickedImage!,
+                                fit: BoxFit.cover, width: double.infinity),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // ✅ تصنيف الحالة (Dropdown)
+                DropdownButtonFormField<CaseCategory>(
+                  value: _category,
+                  decoration: _dec('تصنيف الحالة'),
+                  hint: const Text('تصنيف الحالة'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: CaseCategory.money,
+                      child: Text('تبرع مالي'),
+                    ),
+                    DropdownMenuItem(
+                      value: CaseCategory.inKind,
+                      child: Text('تبرع عيني'),
+                    ),
+                    DropdownMenuItem(
                       value: CaseCategory.physicalEffort,
-                      child: Text('مجهود بدني')),
-                  DropdownMenuItem(
-                      value: CaseCategory.critical, child: Text('أمراض حرجة')),
-                  DropdownMenuItem(
-                      value: CaseCategory.children, child: Text('أطفال')),
-                  DropdownMenuItem(
-                      value: CaseCategory.chronic, child: Text('أمراض مزمنة')),
-                ],
-                onChanged: (v) => setState(() => _category = v ?? _category),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _goalCtrl,
-                keyboardType: TextInputType.number,
-                decoration: _input('الهدف (مثلاً 10000)'),
-                validator: (v) => (v == null || double.tryParse(v) == null)
-                    ? 'أدخل رقم صحيح'
-                    : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _raisedCtrl,
-                keyboardType: TextInputType.number,
-                decoration: _input('المحصول حتى الآن'),
-                validator: (v) => (v == null || double.tryParse(v) == null)
-                    ? 'أدخل رقم صحيح'
-                    : null,
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: _brand,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                      child: Text('تبرع جهدي'),
+                    ),
+                  ],
+                  onChanged: (v) => setState(() => _category = v),
+                  validator: (v) => v == null ? 'اختر تصنيف الحالة' : null,
                 ),
-                onPressed: _save,
-                icon: const Icon(Icons.save, color: Colors.white),
-                label: const Text(
-                  'حفظ',
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white),
+                const SizedBox(height: 12),
+
+                // ✅ عدد النقاط المطلوب (بدل الهدف)
+                TextFormField(
+                  controller: _targetPointsCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: _dec('عدد النقاط المطلوب (مثلاً 10000)'),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty)
+                      return 'أدخل عدد النقاط المطلوب';
+                    final n = int.tryParse(v);
+                    if (n == null || n <= 0)
+                      return 'أدخل رقمًا صحيحًا أكبر من الصفر';
+                    return null;
+                  },
                 ),
-              ),
-            ],
+                const SizedBox(height: 20),
+
+                // زر الحفظ
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.lock),
+                    label: const Text('حفظ'),
+                    onPressed: () {
+                      if (!(_formKey.currentState?.validate() ?? false)) return;
+
+                      // TODO: هنا بتقدر ترسل البيانات للكنترولر/الباك:
+                      // - العنوان: _titleCtrl.text
+                      // - التصنيف: _category
+                      // - عدد النقاط: int.parse(_targetPointsCtrl.text)
+                      // - الصورة المختارة: _pickedImage (إن وُجدت)
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('تم حفظ الحالة (تجريبيًا)')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
+        bottomNavigationBar: _DummyBottomBar(), // للإبقاء على شكل الصورة عندك
+      ),
+    );
+  }
+}
+
+// شريط سفلي شكلي مثل المعروض في لقطة الشاشة
+class _DummyBottomBar extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BottomAppBar(
+      height: 64,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: const [
+          Icon(Icons.settings),
+          Icon(Icons.add_box_outlined),
+          Icon(Icons.table_rows_outlined),
+          Icon(Icons.home),
+        ],
       ),
     );
   }
