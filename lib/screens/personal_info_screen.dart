@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 // إذا اسم الباكيج عندك مختلف عن fikra_app بدّل السطر التالي أو استخدم import نسبي:
-// import 'home_screen.dart';
 import 'package:fikra_app/screens/home_screen.dart';
 
 void main() {
@@ -42,20 +41,23 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
   final TextEditingController emailController = TextEditingController();
 
   String? gender;
-  String? country;
-  String? city;
+  String? province; // ✅ المحافظة بدل البلد/المدينة
   DateTime? birthDate;
 
   File? _image;
 
-  final Map<String, List<String>> countryCities = {
-    'سوريا': ['دمشق'],
-    'الأردن': ['عمان'],
-    'لبنان': ['بيروت'],
-    'المملكة المتحدة': ['لندن'],
-    'الولايات المتحدة': ['واشنطن'],
-    'الإمارات العربية المتحدة': ['أبو ظبي'],
-  };
+  // ✅ قائمة المحافظات
+  final List<String> provinces = const [
+    'إدلب',
+    'الحسكة',
+    'حلب',
+    'حماة',
+    'حمص',
+    'دير الزور',
+    'دمشق',
+    'درعا',
+    'السويداء',
+  ];
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -156,53 +158,25 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
               ),
               const SizedBox(height: 15),
 
-              // البلد
+              // ✅ المحافظة (بدل البلد والمدينة)
               buildFieldWithLabel(
-                "البلد",
+                "المحافظة",
                 DropdownButtonFormField<String>(
-                  value: country,
+                  value: province,
                   decoration: inputDecoration(),
-                  hint: const Text("اختر البلد",
+                  hint: const Text("اختر المحافظة",
                       textDirection: TextDirection.rtl),
-                  items: countryCities.keys
+                  items: provinces
                       .map(
-                        (e) => DropdownMenuItem(
-                          value: e,
-                          child: Text(e, textDirection: TextDirection.rtl),
+                        (p) => DropdownMenuItem(
+                          value: p,
+                          child: Text(p, textDirection: TextDirection.rtl),
                         ),
                       )
                       .toList(),
                   onChanged: (val) {
                     setState(() {
-                      country = val;
-                      city = null;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(height: 15),
-
-              // المدينة
-              buildFieldWithLabel(
-                "المدينة",
-                DropdownButtonFormField<String>(
-                  value: city,
-                  decoration: inputDecoration(),
-                  hint: const Text("اختر المدينة",
-                      textDirection: TextDirection.rtl),
-                  items: country != null
-                      ? countryCities[country]!
-                          .map(
-                            (e) => DropdownMenuItem(
-                              value: e,
-                              child: Text(e, textDirection: TextDirection.rtl),
-                            ),
-                          )
-                          .toList()
-                      : [],
-                  onChanged: (val) {
-                    setState(() {
-                      city = val;
+                      province = val;
                     });
                   },
                 ),
@@ -272,7 +246,6 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                     foregroundColor: WidgetStateProperty.all(Colors.white),
                   ),
                   onPressed: () {
-                    // انتقال إلى واجهة HomeScreen بدل الطباعة
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
