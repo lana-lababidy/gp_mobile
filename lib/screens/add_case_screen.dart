@@ -1,8 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/services.dart'; // للأرقام فقط
-import '../models/case_model.dart'; // CaseCategory: money, inKind, physicalEffort
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
+import '../models/case_model.dart'; // يحتوي enum CaseCategory
+import '../controllers/cases_controller.dart'; // هنستدعي addCase()
 
 class AddCaseScreen extends StatefulWidget {
   const AddCaseScreen({super.key});
@@ -20,6 +23,8 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
 
   CaseCategory? _category;
   File? _pickedImage;
+
+  bool _isSaving = false;
 
   @override
   void dispose() {
@@ -45,6 +50,34 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
         contentPadding:
             const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
       );
+
+  Future<void> _save() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() => _isSaving = true);
+    try {
+      await context.read<CasesController>().addCase(
+            title: _titleCtrl.text.trim(),
+            category: _category!, // تم التأكد بالـ validator
+            targetPoints: int.parse(_targetPointsCtrl.text),
+            imageFile: _pickedImage, // اختياري
+          );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تمت إضافة الحالة بنجاح')),
+      );
+
+      // رجوع إلى الشاشة الرئيسية وتحديثها
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('فشل الحفظ: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -161,22 +194,15 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton.icon(
-                    icon: const Icon(Icons.lock),
-                    label: const Text('حفظ'),
-                    onPressed: () {
-                      if (!(_formKey.currentState?.validate() ?? false)) return;
-
-                      // TODO: إرسال البيانات للكنترولر/الباك:
-                      // - العنوان: _titleCtrl.text
-                      // - التصنيف: _category
-                      // - عدد النقاط: int.parse(_targetPointsCtrl.text)
-                      // - الصورة: _pickedImage (إن وُجدت)
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('تم حفظ الحالة (تجريبيًا)')),
-                      );
-                    },
+                    icon: _isSaving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.lock),
+                    label: Text(_isSaving ? 'جارٍ الحفظ...' : 'حفظ'),
+                    onPressed: _isSaving ? null : _save,
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -188,7 +214,6 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
             ),
           ),
         ),
-        // 🟢 لا يوجد bottomNavigationBar هنا
       ),
     );
   }
