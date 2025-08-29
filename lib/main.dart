@@ -12,7 +12,6 @@ import 'screens/cases_list_screen.dart';
 import 'screens/phone_screen.dart';
 import 'screens/otp_screen.dart';
 import 'screens/personal_info_screen.dart';
-import 'screens/api_test_screen.dart'; // ✅ شاشة الاختبار
 
 // الحارس وحوار التأكيد
 import 'widgets/exit_guard.dart';
@@ -68,23 +67,25 @@ class MyApp extends StatelessWidget {
         Locale('ar'),
         Locale('en'),
       ],
+      // (اختياري) ثبّت العربية كلغة افتراضية
+      locale: const Locale('ar'),
 
       // لفّ كل الشاشات بحارس الخروج
       builder: (context, child) => ExitGuard(
         child: child ?? const SizedBox.shrink(),
       ),
 
-      // ✅ مؤقتًا نبدأ باختبار API
-      home: ApiTestScreen(),
+      // ✅ البداية المعتادة: Splash → (تتنقل بعدها لِـ PhoneScreen من داخل السبلّاش)
+      home: const SplashScreen(),
 
       // مسارات التطبيق
       routes: {
-        '/home': (context) => HomeScreen(), // الرئيسية مع التبويبات
-        '/cases': (context) => CasesListScreen(), // قائمة الحالات
+        '/home': (context) => const HomeScreen(), // الرئيسية مع التبويبات
+        '/cases': (context) => const CasesListScreen(), // قائمة الحالات
         '/phone': (context) => PhoneScreen(), // شاشة الهاتف
-        '/otp': (context) => OtpScreen(), // شاشة OTP
-        '/personal-info': (context) => PersonalInfoPage(), // معلومات شخصية
-        '/apitest': (context) => ApiTestScreen(), // ✅ شاشة اختبار الاتصال
+        '/otp': (context) => const OtpScreen(), // شاشة OTP
+        '/personal-info': (context) =>
+            const PersonalInfoPage(), // معلومات شخصية
       },
     );
   }
