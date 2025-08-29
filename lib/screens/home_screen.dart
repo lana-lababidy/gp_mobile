@@ -5,57 +5,114 @@ import 'package:provider/provider.dart';
 import '../controllers/cases_controller.dart';
 import '../models/case_model.dart';
 import 'add_case_screen.dart';
+import 'cases_list_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  // ترتيب مثل اللقطة: الإعدادات | إضافة | قائمة | الرئيسية
+  int _currentIndex = 3;
+
+  // ألوان مثل السابق
+  static const Color kNavy = Color(0xFF0A2A6C);
 
   @override
   Widget build(BuildContext context) {
     final casesCtrl = context.watch<CasesController>();
-    final cases = casesCtrl.cases; // مهم: watch ليتحدّث تلقائيًا
+    final cases = casesCtrl.cases;
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        backgroundColor: Colors.white,
         appBar: AppBar(
           title: const Text('ABSHIR'),
           centerTitle: true,
-        ),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // بطاقة ترحيب بسيطة (اختيارية)
-            _WelcomeCard(),
-            const SizedBox(height: 12),
-
-            // قائمة الحالات
-            if (cases.isEmpty)
-              const _EmptyState()
-            else
-              ...List.generate(cases.length, (i) {
-                final c = cases[i];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _CaseTile(c: c),
-                );
-              }),
-          ],
+          backgroundColor: kNavy,
+          foregroundColor: Colors.white,
+          elevation: 0,
         ),
 
-        // زر إضافة حالة
-        floatingActionButton: FloatingActionButton.extended(
-          icon: const Icon(Icons.add),
-          label: const Text('إضافة حالة'),
-          onPressed: () async {
-            // نفتح شاشة الإضافة ونرجع منها بـ pop
-            await Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AddCaseScreen()),
-            );
-            // ما منحتاج نعمل شي بعد الرجوع — الـ watch بيحدّث الواجهة تلقائيًا
+        // الجسم: حسب التبويب الحالي
+        body: _buildBody(context, cases),
+
+        // ✅ شريط سفلي (بدون FAB)
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (i) async {
+            // الترتيب: 0 settings, 1 add, 2 list, 3 home
+            if (i == 1) {
+              // فتح إضافة حالة ثم الرجوع
+              await Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AddCaseScreen()),
+              );
+              // بعد الرجوع خليك على الرئيسية لحتى تشوف الحالة الجديدة
+              setState(() => _currentIndex = 3);
+            } else {
+              setState(() => _currentIndex = i);
+            }
           },
+          selectedItemColor: kNavy,
+          unselectedItemColor: Colors.grey.shade600,
+          type: BottomNavigationBarType.fixed,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings),
+              label: 'الإعدادات',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.add_box_outlined),
+              label: 'إضافة',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.table_rows_outlined),
+              label: 'الحالات',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'الرئيسية',
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildBody(BuildContext context, List<CaseModel> cases) {
+    switch (_currentIndex) {
+      case 2:
+        // شاشة قائمة الحالات (الموجودة عندك)
+        return const CasesListScreen();
+
+      case 3:
+        // الرئيسية (الترحيب + آخر الحالات)
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _WelcomeCard(),
+            const SizedBox(height: 12),
+            if (cases.isEmpty)
+              const _EmptyState()
+            else
+              ...List.generate(
+                cases.length,
+                (i) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _CaseTile(c: cases[i]),
+                ),
+              ),
+          ],
+        );
+
+      default:
+        // تبويب الإعدادات (Placeholder بسيط)
+        return const Center(child: Text('الإعدادات'));
+    }
   }
 }
 
@@ -63,7 +120,7 @@ class _WelcomeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.blue.shade50,
+      color: Colors.blue.shade50, // نفس الطابع القديم
       borderRadius: BorderRadius.circular(16),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -113,7 +170,7 @@ class _CaseTile extends StatelessWidget {
   }
 
   Widget _thumb(String? pathOrUrl) {
-    final double size = 48;
+    const double size = 48;
     if (pathOrUrl == null || pathOrUrl.isEmpty) {
       return Container(
         width: size,
@@ -125,17 +182,13 @@ class _CaseTile extends StatelessWidget {
         child: const Icon(Icons.image_outlined),
       );
     }
-
-    // لو رابط http نستخدم NetworkImage، غير ذلك نفترضه مسار ملف محلي
     final isHttp = pathOrUrl.startsWith('http');
-    final imageProvider = isHttp
-        ? NetworkImage(pathOrUrl)
-        : FileImage(File(pathOrUrl)) as ImageProvider;
-
+    final ImageProvider provider =
+        isHttp ? NetworkImage(pathOrUrl) : FileImage(File(pathOrUrl));
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Image(
-        image: imageProvider,
+        image: provider,
         width: size,
         height: size,
         fit: BoxFit.cover,
@@ -181,7 +234,7 @@ class _EmptyState extends StatelessWidget {
               const SizedBox(height: 8),
               const Text('لا توجد حالات بعد'),
               Text(
-                'أضف أول حالة من زر الإضافة بالأسفل.',
+                'أضف أول حالة من تبويب "إضافة" في الشريط السفلي.',
                 style: TextStyle(color: Colors.grey.shade600),
               ),
             ],

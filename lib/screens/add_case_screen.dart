@@ -68,9 +68,10 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
         const SnackBar(content: Text('تمت إضافة الحالة بنجاح')),
       );
 
-      // رجوع إلى الشاشة الرئيسية وتحديثها
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      // ✅ رجوع للواجهة السابقة (Home موجودة مسبقًا وستتحدّث تلقائيًا)
+      Navigator.pop(context);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('فشل الحفظ: $e')),
       );
@@ -148,17 +149,12 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                   hint: const Text('تصنيف الحالة'),
                   items: const [
                     DropdownMenuItem(
-                      value: CaseCategory.money,
-                      child: Text('تبرع مالي'),
-                    ),
+                        value: CaseCategory.money, child: Text('تبرع مالي')),
                     DropdownMenuItem(
-                      value: CaseCategory.inKind,
-                      child: Text('تبرع عيني'),
-                    ),
+                        value: CaseCategory.inKind, child: Text('تبرع عيني')),
                     DropdownMenuItem(
-                      value: CaseCategory.physicalEffort,
-                      child: Text('تبرع جهدي'),
-                    ),
+                        value: CaseCategory.physicalEffort,
+                        child: Text('تبرع جهدي')),
                   ],
                   onChanged: (v) => setState(() => _category = v),
                   validator: (v) => v == null ? 'اختر تصنيف الحالة' : null,
@@ -166,10 +162,8 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                 const SizedBox(height: 12),
 
                 // عدد النقاط المطلوب
-                const Text(
-                  'عدد النقاط المطلوب',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
+                const Text('عدد النقاط المطلوب',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _targetPointsCtrl,
@@ -177,13 +171,11 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: _dec('اكتب العدد (مثلاً 10000)'),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) {
+                    if (v == null || v.trim().isEmpty)
                       return 'أدخل عدد النقاط المطلوب';
-                    }
                     final n = int.tryParse(v);
-                    if (n == null || n <= 0) {
+                    if (n == null || n <= 0)
                       return 'أدخل رقمًا صحيحًا أكبر من الصفر';
-                    }
                     return null;
                   },
                 ),
@@ -198,15 +190,13 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
+                            child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.lock),
                     label: Text(_isSaving ? 'جارٍ الحفظ...' : 'حفظ'),
                     onPressed: _isSaving ? null : _save,
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),
