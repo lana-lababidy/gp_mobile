@@ -16,8 +16,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
 
   // الحقول
   final TextEditingController _titleCtrl = TextEditingController();
-  final TextEditingController _targetPointsCtrl =
-      TextEditingController(); // ← بدون 10000
+  final TextEditingController _targetPointsCtrl = TextEditingController();
 
   CaseCategory? _category;
   File? _pickedImage;
@@ -133,7 +132,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // ✅ عنوان فوق مربع النص + حقل فارغ للأرقام فقط
+                // عدد النقاط المطلوب
                 const Text(
                   'عدد النقاط المطلوب',
                   style: TextStyle(fontWeight: FontWeight.w600),
@@ -189,26 +188,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
             ),
           ),
         ),
-        bottomNavigationBar: _DummyBottomBar(),
-      ),
-    );
-  }
-}
-
-// شريط سفلي شكلي مثل لقطة الشاشة
-class _DummyBottomBar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return BottomAppBar(
-      height: 64,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: const [
-          Icon(Icons.settings),
-          Icon(Icons.add_box_outlined),
-          Icon(Icons.table_rows_outlined),
-          Icon(Icons.home),
-        ],
+        // 🟢 لا يوجد bottomNavigationBar هنا
       ),
     );
   }
