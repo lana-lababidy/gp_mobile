@@ -7,7 +7,7 @@ class CaseDetailsScreen extends StatelessWidget {
       {super.key, required this.caseModel, this.description});
 
   final CaseModel caseModel;
-  final String? description; // اختياري، إن ما توفر بنعرض نص افتراضي
+  final String? description; // اختياري
 
   static const Color kNavy = Color(0xFF0A2A6C);
   static const Color kProgress = Color(0xFF23A8F5);
@@ -15,9 +15,11 @@ class CaseDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final percent = (caseModel.progress * 100).clamp(0, 100).toStringAsFixed(0);
+    // ✅ clamp يعيد num، لذلك نحوّله إلى double
+    final double remain = (caseModel.goal - caseModel.raised)
+        .clamp(0.0, double.infinity)
+        .toDouble();
     final date = _formatDate(caseModel.createdAt);
-    final remain =
-        (caseModel.goal - caseModel.raised).clamp(0, double.infinity);
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -39,7 +41,7 @@ class CaseDetailsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // العنوان وسط مثل البطاقة المرجعية
+            // العنوان
             Text(
               caseModel.title,
               textAlign: TextAlign.center,
@@ -52,7 +54,7 @@ class CaseDetailsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
 
-            // سطر معلومات: التاريخ + التصنيف
+            // سطر معلومات
             Row(
               children: [
                 Text(
@@ -112,7 +114,7 @@ class CaseDetailsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // أرقام مختصرة: الهدف - المحصّل - المتبقي
+            // أرقام مختصرة
             Container(
               decoration: BoxDecoration(
                 color: Colors.blue.shade50,
@@ -204,6 +206,7 @@ class CaseDetailsScreen extends StatelessWidget {
     }
   }
 
+  // التاريخ yy-MM-dd
   String _formatDate(DateTime d) {
     final yy = (d.year % 100).toString().padLeft(2, '0');
     final mm = d.month.toString().padLeft(2, '0');
@@ -217,7 +220,9 @@ class CaseDetailsScreen extends StatelessWidget {
           width: 4,
           height: 4,
           decoration: const BoxDecoration(
-              color: Color(0xFF90CAF9), shape: BoxShape.circle),
+            color: Color(0xFF90CAF9),
+            shape: BoxShape.circle,
+          ),
         ),
       );
 
@@ -225,15 +230,16 @@ class CaseDetailsScreen extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('$label: ',
-            style: const TextStyle(fontWeight: FontWeight.w600, color: kNavy)),
+        Text(
+          '$label: ',
+          style: const TextStyle(fontWeight: FontWeight.w600, color: kNavy),
+        ),
         Text(value),
       ],
     );
   }
 
   String _fmt(num n) {
-    // تنسيق بسيط بدون كسور (عدد نقاط)
     return n.toStringAsFixed(0);
   }
 }
@@ -243,6 +249,6 @@ class _PaymentArgs {
   final String caseId;
   final String title;
   final double remain;
-  _PaymentArgs(
+  const _PaymentArgs(
       {required this.caseId, required this.title, required this.remain});
 }
