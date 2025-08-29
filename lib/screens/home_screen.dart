@@ -1,129 +1,192 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'add_case_screen.dart';
-import 'cases_list_screen.dart'; // شاشة الحالات
+import 'package:provider/provider.dart';
 
-class HomeScreen extends StatefulWidget {
-  /// تبويب البداية (0 الرئيسية، 1 الحالات، 2 إضافة، 3 الإعدادات)
-  final int initialIndex;
-  const HomeScreen({super.key, this.initialIndex = 0});
+import '../controllers/cases_controller.dart';
+import '../models/case_model.dart';
+import 'add_case_screen.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  Widget build(BuildContext context) {
+    final casesCtrl = context.watch<CasesController>();
+    final cases = casesCtrl.cases; // مهم: watch ليتحدّث تلقائيًا
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('ABSHIR'),
+          centerTitle: true,
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // بطاقة ترحيب بسيطة (اختيارية)
+            _WelcomeCard(),
+            const SizedBox(height: 12),
+
+            // قائمة الحالات
+            if (cases.isEmpty)
+              const _EmptyState()
+            else
+              ...List.generate(cases.length, (i) {
+                final c = cases[i];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _CaseTile(c: c),
+                );
+              }),
+          ],
+        ),
+
+        // زر إضافة حالة
+        floatingActionButton: FloatingActionButton.extended(
+          icon: const Icon(Icons.add),
+          label: const Text('إضافة حالة'),
+          onPressed: () async {
+            // نفتح شاشة الإضافة ونرجع منها بـ pop
+            await Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AddCaseScreen()),
+            );
+            // ما منحتاج نعمل شي بعد الرجوع — الـ watch بيحدّث الواجهة تلقائيًا
+          },
+        ),
+      ),
+    );
+  }
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  late int _currentIndex;
-
+class _WelcomeCard extends StatelessWidget {
   @override
-  void initState() {
-    super.initState();
-    _currentIndex = widget.initialIndex; // ابدأ من التبويب المطلوب
-  }
-
-  // صفحات التبويبات
-  List<Widget> get _pages => [
-        // الصفحة 0: الرئيسية
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Card(
-              margin: const EdgeInsets.all(16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              color: Colors.blue.shade50,
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  "أهلاً بك 👋",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0A2A6C),
-                  ),
-                  textAlign: TextAlign.right,
-                ),
-              ),
-            ),
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.blue.shade50,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: const [
+            Text('👋'),
+            SizedBox(width: 8),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
-                    child: const ListTile(
-                      leading: Icon(Icons.assignment, color: Color(0xFF0A2A6C)),
-                      title: Text(
-                        "مرحباً بك في أبشر",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        textAlign: TextAlign.right,
-                      ),
-                      subtitle: Text(
-                        "هذه هي الحالة الأولى للتجربة",
-                        textAlign: TextAlign.right,
-                      ),
-                    ),
-                  ),
-                ],
+              child: Text(
+                'أهلاً بك',
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
 
-        // الصفحة 1: الحالات
-        const CasesListScreen(),
-
-        // الصفحة 2: إضافة حالة
-        const AddCaseScreen(),
-
-        // الصفحة 3: الإعدادات (مؤقتاً نص فقط)
-        const Center(child: Text("الإعدادات")),
-      ];
+class _CaseTile extends StatelessWidget {
+  final CaseModel c;
+  const _CaseTile({required this.c});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "ABSHIR",
-          style: TextStyle(
-            fontFamily: 'Cairo',
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-            color: Colors.white,
+    final percent = (c.progress * 100).toStringAsFixed(0);
+
+    return Material(
+      color: Colors.white,
+      elevation: 0,
+      borderRadius: BorderRadius.circular(12),
+      child: ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        leading: _thumb(c.imageUrl),
+        title: Text(
+          c.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text('$percent% • ${_catLabel(c.category)}'),
+        onTap: () {
+          // لاحقًا: افتح تفاصيل الحالة
+        },
+      ),
+    );
+  }
+
+  Widget _thumb(String? pathOrUrl) {
+    final double size = 48;
+    if (pathOrUrl == null || pathOrUrl.isEmpty) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Icon(Icons.image_outlined),
+      );
+    }
+
+    // لو رابط http نستخدم NetworkImage، غير ذلك نفترضه مسار ملف محلي
+    final isHttp = pathOrUrl.startsWith('http');
+    final imageProvider = isHttp
+        ? NetworkImage(pathOrUrl)
+        : FileImage(File(pathOrUrl)) as ImageProvider;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image(
+        image: imageProvider,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          width: size,
+          height: size,
+          color: Colors.grey.shade200,
+          child: const Icon(Icons.broken_image_outlined),
+        ),
+      ),
+    );
+  }
+
+  String _catLabel(CaseCategory c) {
+    switch (c) {
+      case CaseCategory.money:
+        return 'تبرع مالي';
+      case CaseCategory.inKind:
+        return 'تبرع عيني';
+      case CaseCategory.physicalEffort:
+        return 'تبرع جهدي';
+      default:
+        return 'غير مصنف';
+    }
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Material(
+        color: Colors.white,
+        elevation: 0,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Icon(Icons.inbox_outlined, size: 56, color: Colors.grey.shade600),
+              const SizedBox(height: 8),
+              const Text('لا توجد حالات بعد'),
+              Text(
+                'أضف أول حالة من زر الإضافة بالأسفل.',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+            ],
           ),
         ),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF0A2A6C),
-        elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.notifications, color: Colors.white),
-          ),
-        ],
-      ),
-      body: _pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: const Color(0xFF0A2A6C),
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "الرئيسية"),
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: "الحالات"),
-          BottomNavigationBarItem(icon: Icon(Icons.add_box), label: "إضافة"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.settings), label: "الإعدادات"),
-        ],
       ),
     );
   }
