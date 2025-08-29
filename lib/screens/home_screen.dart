@@ -15,7 +15,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // ترتيب مثل اللقطة: الإعدادات | إضافة | قائمة | الرئيسية
+  // ترتيب مثل اللقطة: الإعدادات | إضافة | الحالات | الرئيسية
   int _currentIndex = 3;
 
   // ألوان مثل السابق
@@ -86,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBody(BuildContext context, List<CaseModel> cases) {
     switch (_currentIndex) {
       case 2:
-        // شاشة قائمة الحالات (الموجودة عندك)
+        // شاشة قائمة الحالات
         return const CasesListScreen();
 
       case 3:
@@ -110,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
       default:
-        // تبويب الإعدادات (Placeholder بسيط)
+        // تبويب الإعدادات
         return const Center(child: Text('الإعدادات'));
     }
   }
@@ -120,7 +120,7 @@ class _WelcomeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.blue.shade50, // نفس الطابع القديم
+      color: Colors.blue.shade50,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -171,6 +171,7 @@ class _CaseTile extends StatelessWidget {
 
   Widget _thumb(String? pathOrUrl) {
     const double size = 48;
+
     if (pathOrUrl == null || pathOrUrl.isEmpty) {
       return Container(
         width: size,
@@ -182,9 +183,16 @@ class _CaseTile extends StatelessWidget {
         child: const Icon(Icons.image_outlined),
       );
     }
+
     final isHttp = pathOrUrl.startsWith('http');
-    final ImageProvider provider =
-        isHttp ? NetworkImage(pathOrUrl) : FileImage(File(pathOrUrl));
+    late final ImageProvider provider;
+
+    if (isHttp) {
+      provider = NetworkImage(pathOrUrl);
+    } else {
+      provider = FileImage(File(pathOrUrl));
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Image(
