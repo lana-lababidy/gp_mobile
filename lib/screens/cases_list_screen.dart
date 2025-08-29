@@ -34,7 +34,8 @@ class CasesListScreen extends StatelessWidget {
                 ),
               ),
             ),
-            // فلاتر سريعة (شكلية)
+
+            // فلاتر سريعة: الكل + الأنواع الثلاثة المطلوبة فقط
             SizedBox(
               height: 44,
               child: ListView(
@@ -42,17 +43,16 @@ class CasesListScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 children: const [
                   _FilterChip(label: 'الكل', cat: CaseCategory.all),
-                  _FilterChip(label: 'أمراض حرجة', cat: CaseCategory.critical),
-                  _FilterChip(label: 'أطفال', cat: CaseCategory.children),
-                  _FilterChip(label: 'أمراض مزمنة', cat: CaseCategory.chronic),
+                  _FilterChip(label: 'تبرع مالي', cat: CaseCategory.money),
+                  _FilterChip(label: 'تبرع عيني', cat: CaseCategory.inKind),
                   _FilterChip(
-                      label: 'مجهود بدني', cat: CaseCategory.physicalEffort),
-                  _FilterChip(label: 'تبرعات عينية', cat: CaseCategory.inKind),
-                  _FilterChip(label: 'أموال', cat: CaseCategory.money),
+                      label: 'تبرع جهدي', cat: CaseCategory.physicalEffort),
                 ],
               ),
             ),
+
             const SizedBox(height: 8),
+
             // القائمة
             Expanded(
               child: c.cases.isEmpty
@@ -65,24 +65,31 @@ class CasesListScreen extends StatelessWidget {
                         final item = c.cases[i];
                         return ListTile(
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           tileColor: Colors.white,
-                          title: Text(item.title,
-                              maxLines: 2, overflow: TextOverflow.ellipsis),
+                          title: Text(
+                            item.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           subtitle: Text(
-                              '${(item.progress * 100).toStringAsFixed(0)}% • ${_catLabel(item.category)}'),
+                            '${(item.progress * 100).toStringAsFixed(0)}% • ${_catLabel(item.category)}',
+                          ),
                         );
                       },
                     ),
             ),
           ],
         ),
-        // رح نربط زر الإضافة بالشاشة add_case بالخطوة الجاية
+
+        // رح نربط زر الإضافة بالشاشة add_case لاحقًا
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                  content: Text('رح نربطها مع شاشة الإضافة بالخطوة التالية')),
+                content: Text('رح نربطها مع شاشة الإضافة بالخطوة التالية'),
+              ),
             );
           },
           icon: const Icon(Icons.add),
@@ -92,22 +99,17 @@ class CasesListScreen extends StatelessWidget {
     );
   }
 
+  // إرجاع نص التصنيف بصيغة جديدة
   static String _catLabel(CaseCategory c) {
     switch (c) {
-      case CaseCategory.critical:
-        return 'أمراض حرجة';
-      case CaseCategory.children:
-        return 'أطفال';
-      case CaseCategory.chronic:
-        return 'أمراض مزمنة';
-      case CaseCategory.physicalEffort:
-        return 'مجهود بدني';
-      case CaseCategory.inKind:
-        return 'تبرعات عينية';
       case CaseCategory.money:
-        return 'أموال';
+        return 'تبرع مالي';
+      case CaseCategory.inKind:
+        return 'تبرع عيني';
+      case CaseCategory.physicalEffort:
+        return 'تبرع جهدي';
       default:
-        return 'غير مصنّف';
+        return 'غير مصنف';
     }
   }
 }
@@ -116,6 +118,7 @@ class _FilterChip extends StatelessWidget {
   final String label;
   final CaseCategory cat;
   const _FilterChip({required this.label, required this.cat});
+
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<CasesController>();
@@ -134,18 +137,24 @@ class _FilterChip extends StatelessWidget {
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState();
+
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.inbox_outlined, size: 64),
-          const SizedBox(height: 8),
-          const Text('لا توجد حالات بعد'),
-          Text('أضف أول حالة من الزر بالأسفل.',
-              style: TextStyle(color: Colors.grey.shade600)),
-        ]),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.inbox_outlined, size: 64),
+            const SizedBox(height: 8),
+            const Text('لا توجد حالات بعد'),
+            Text(
+              'أضف أول حالة من الزر بالأسفل.',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ],
+        ),
       ),
     );
   }
