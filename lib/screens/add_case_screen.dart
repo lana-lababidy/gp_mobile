@@ -33,7 +33,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
 
   // ألوان/ستايل موحّد مع التطبيق
   static const Color kNavy = Color(0xFF0A2A6C);
-  static const Color kAccent = Color(0xFF23A8F5); // ✅ صار مستخدم
+  static const Color kAccent = Color(0xFF23A8F5);
   static const Color kCardBg = Colors.white;
   static final Color kFieldBg = Colors.grey.shade100;
   static final Color kHint = Colors.grey.shade500;
@@ -64,7 +64,6 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
-        // ✅ لون التركيز صار kAccent لانسجام أجمل مع التدرّج
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: kAccent, width: 1.6),
@@ -82,7 +81,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: kAccent.withOpacity(.12), // ✅ لمسة لون تابعة للـ accent
+                color: kAccent.withOpacity(.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, size: 16, color: kNavy),
@@ -130,16 +129,16 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
     try {
       await context.read<CasesController>().addCase(
             title: _titleCtrl.text.trim(),
-            category: _category!, // تم التحقق عبر validator
+            category: _category!,
             targetPoints: target,
-            imageFile: _mainImage, // الصورة الأساسية
+            imageFile: _mainImage,
           );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تمت إضافة الحالة بنجاح')),
       );
-      Navigator.pop(context); // رجوع للرئيسية
+      Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -177,6 +176,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                         icon: Icons.description_outlined),
                     TextFormField(
                       controller: _titleCtrl,
+                      style: const TextStyle(color: Colors.black87), // ✅ أوضح
                       decoration: _dec('عنوان الحالة', icon: Icons.title),
                       validator: (v) => (v == null || v.trim().isEmpty)
                           ? 'أدخل عنوان الحالة'
@@ -185,6 +185,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _descCtrl,
+                      style: const TextStyle(color: Colors.black87), // ✅
                       maxLines: 4,
                       decoration:
                           _dec('وصف الحالة', icon: Icons.notes_outlined),
@@ -198,7 +199,6 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _sectionTitle('الصور', icon: Icons.photo_library_outlined),
-                    // الصورة الأساسية
                     Text('الصورة الأساسية', style: TextStyle(color: kLabel)),
                     const SizedBox(height: 6),
                     _imagePickerBox(
@@ -207,7 +207,6 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                       placeholder: 'اضغط لاختيار صورة من المعرض',
                     ),
                     const SizedBox(height: 12),
-                    // صورة قبل التبرع
                     Text('صورة الحالة قبل التبرع',
                         style: TextStyle(color: kLabel)),
                     const SizedBox(height: 6),
@@ -228,6 +227,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                         icon: Icons.category_outlined),
                     TextFormField(
                       controller: _phoneCtrl,
+                      style: const TextStyle(color: Colors.black87), // ✅
                       keyboardType: TextInputType.phone,
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]'))
@@ -272,6 +272,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                     const SizedBox(height: 6),
                     TextFormField(
                       controller: _amountCtrl,
+                      style: const TextStyle(color: Colors.black87), // ✅
                       keyboardType: TextInputType.number,
                       inputFormatters: [ThousandsSeparatorFormatter()],
                       decoration: _dec('اكتب العدد (مثلاً 1,000,000)',
@@ -289,7 +290,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                 )),
                 const SizedBox(height: 18),
 
-                // زر الحفظ (✅ تدرّج kNavy → kAccent)
+                // زر الحفظ
                 SizedBox(
                   width: double.infinity,
                   height: 52,
