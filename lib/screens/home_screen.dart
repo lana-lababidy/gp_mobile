@@ -4,8 +4,11 @@ import 'package:provider/provider.dart';
 
 import '../controllers/cases_controller.dart';
 import '../models/case_model.dart';
-import 'add_case_screen.dart';
+
+// الشاشات الأخرى
 import 'cases_list_screen.dart';
+import 'add_case_screen.dart';
+import 'case_details_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,300 +18,300 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // ترتيب مثل اللقطة: الإعدادات | إضافة | الحالات | الرئيسية
-  int _currentIndex = 3;
-
-  // ألوان ثابتة
+  // ألوان موحّدة
   static const Color kNavy = Color(0xFF0A2A6C);
-  static const Color kProgress = Color(0xFF23A8F5); // أزرق فاتح لشريط التقدم
+
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
-    final casesCtrl = context.watch<CasesController>();
-    final cases = casesCtrl.cases;
+    final c = context.watch<CasesController>();
+    final cases = c.cases;
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF7F8FA),
         appBar: AppBar(
           title: const Text('ABSHIR'),
           centerTitle: true,
           backgroundColor: kNavy,
           foregroundColor: Colors.white,
           elevation: 0,
+          actions: const [
+            Padding(
+              padding: EdgeInsetsDirectional.only(end: 12),
+              child:
+                  Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+            ),
+          ],
         ),
-        body: _buildBody(context, cases),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          children: [
+            // بطاقة ترحيب صغيرة
+            _greetCard(),
+
+            const SizedBox(height: 8),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Text(
+                'الحالات المثبتة',
+                style: TextStyle(
+                  color: kNavy,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+
+            if (cases.isEmpty)
+              _emptyPinned()
+            else
+              ...cases.take(3).map(
+                    (e) => Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 6),
+                      child: _PinnedCaseCard(
+                        item: e,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => CaseDetailsScreen(caseModel: e),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+            const SizedBox(height: 16),
+          ],
+        ),
+
+        // شريط سفلي
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
-          onTap: (i) async {
-            // الترتيب: 0 settings, 1 add, 2 list, 3 home
-            if (i == 1) {
-              await Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AddCaseScreen()),
-              );
-              setState(() => _currentIndex = 3); // ارجع للرئيسية بعد الإضافة
-            } else {
-              setState(() => _currentIndex = i);
-            }
-          },
+          type: BottomNavigationBarType.fixed,
           selectedItemColor: kNavy,
           unselectedItemColor: Colors.grey.shade600,
-          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          onTap: (i) {
+            setState(() => _currentIndex = i);
+            if (i == 0) {
+              // الرئيسية
+            } else if (i == 1) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CasesListScreen()),
+              );
+            } else if (i == 2) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AddCaseScreen()),
+              );
+            } else if (i == 3) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('الإعدادات قادمة قريبًا')),
+              );
+            }
+          },
           items: const [
             BottomNavigationBarItem(
-                icon: Icon(Icons.settings), label: 'الإعدادات'),
+                icon: Icon(Icons.home_filled), label: 'الرئيسية'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.list_alt_rounded), label: 'الحالات'),
             BottomNavigationBarItem(
                 icon: Icon(Icons.add_box_outlined), label: 'إضافة'),
             BottomNavigationBarItem(
-                icon: Icon(Icons.table_rows_outlined), label: 'الحالات'),
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'),
+                icon: Icon(Icons.settings), label: 'الإعدادات'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context, List<CaseModel> cases) {
-    switch (_currentIndex) {
-      case 2:
-        return const CasesListScreen();
-
-      case 3:
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _WelcomeCard(),
-            const SizedBox(height: 16),
-
-            // عنوان القسم مثل الصورة: "الحالات المثبتة"
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                'الحالات المثبتة',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
-                  color: kNavy,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            if (cases.isEmpty)
-              const _EmptyState()
-            else
-              ...cases.map((c) => Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: _PinnedCaseCard(caseModel: c),
-                  )),
-          ],
-        );
-
-      default:
-        return const Center(child: Text('الإعدادات'));
-    }
-  }
-}
-
-class _WelcomeCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.blue.shade50,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: const [
-            Text('👋'),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'أهلاً بك',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// بطاقة حالة على شكل الصورة المرجعية
-class _PinnedCaseCard extends StatelessWidget {
-  final CaseModel caseModel;
-  const _PinnedCaseCard({required this.caseModel});
-
-  static const Color kNavy = _HomeScreenState.kNavy;
-  static const Color kProgress = _HomeScreenState.kProgress;
-
-  @override
-  Widget build(BuildContext context) {
-    final percent = (caseModel.progress * 100).clamp(0, 100).toStringAsFixed(0);
-    final date = _formatDate(caseModel.createdAt); // yy-MM-dd
-
+  Widget _greetCard() {
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE9F2FF),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: const [
+          Text(
+            'أهلًا بك ',
+            style: TextStyle(
+              color: Color(0xFF0A2A6C),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text('👋'),
+        ],
+      ),
+    );
+  }
+
+  Widget _emptyPinned() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
+            color: Colors.black.withValues(alpha: .05), // ✅ بدل withOpacity
+            blurRadius: 10,
             offset: const Offset(0, 4),
-          ),
+          )
         ],
       ),
-      child: Column(
-        children: [
-          // الصورة
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(18),
-              topRight: Radius.circular(18),
-            ),
-            child: _buildImage(caseModel.imageUrl),
-          ),
+      child: const Center(
+        child: Text(
+          'لا توجد حالات مثبتة بعد',
+          style: TextStyle(color: Colors.black54),
+        ),
+      ),
+    );
+  }
+}
 
-          // الشريط الأبيض مع النص بمحاذاة الوسط
-          Container(
-            width: double.infinity,
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Text(
-              caseModel.title,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: kNavy,
-                height: 1.35,
+/// بطاقة حالة مثبّتة قابلة للنقر
+class _PinnedCaseCard extends StatelessWidget {
+  const _PinnedCaseCard({required this.item, required this.onTap});
+
+  final CaseModel item;
+  final VoidCallback onTap;
+
+  static const Color kNavy = Color(0xFF0A2A6C);
+  static const Color kAccent = Color(0xFF23A8F5);
+
+  @override
+  Widget build(BuildContext context) {
+    final String date = _fmtDate(item.createdAt);
+    final String percent =
+        (item.progress * 100).clamp(0, 100).toStringAsFixed(0);
+
+    final bool isHttp = (item.imageUrl ?? '').startsWith('http');
+    final ImageProvider? provider = item.imageUrl == null
+        ? null
+        : (isHttp
+            ? NetworkImage(item.imageUrl!)
+            : FileImage(File(item.imageUrl!)) as ImageProvider);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: .06), // ✅
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // الصورة
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(18)),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: provider == null
+                    ? Container(
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: Icon(Icons.image_outlined,
+                              color: kNavy, size: 42),
+                        ),
+                      )
+                    : Image(image: provider, fit: BoxFit.cover),
               ),
             ),
-          ),
 
-          // السطر: 100% يسار + شريط التقدم
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
-              children: [
-                Text(
-                  '$percent%',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: kProgress,
-                  ),
+            // العنوان
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+              child: Text(
+                item.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.start,
+                style: const TextStyle(
+                  color: kNavy,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14.5,
+                  height: 1.4,
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: caseModel.progress,
-                      minHeight: 8,
-                      backgroundColor: const Color(0xFFE8F5FF),
-                      color: kProgress,
+              ),
+            ),
+
+            // النسبة + الشريط
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: item.progress,
+                        minHeight: 8,
+                        backgroundColor: const Color(0xFFE8F5FF),
+                        color: kAccent,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          // التاريخ أسفل يمين
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
-            child: Row(
-              children: [
-                const Spacer(),
-                Text(
-                  date,
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(width: 8),
+                  Text(
+                    '$percent%',
+                    style: const TextStyle(
+                      color: kAccent,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+
+            // التاريخ + سهم
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: Row(
+                children: [
+                  Text(
+                    date,
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  const Icon(Icons.chevron_left_rounded, color: kNavy),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // تنسيق التاريخ: yy-MM-dd
-  String _formatDate(DateTime d) {
+  static String _fmtDate(DateTime d) {
     final yy = (d.year % 100).toString().padLeft(2, '0');
     final mm = d.month.toString().padLeft(2, '0');
     final dd = d.day.toString().padLeft(2, '0');
     return '$yy-$mm-$dd';
-  }
-
-  // صورة بطاقة: رابط شبكة أو مسار محلي، مع Placeholder افتراضي
-  Widget _buildImage(String? pathOrUrl) {
-    const double height = 180;
-    if (pathOrUrl == null || pathOrUrl.isEmpty) {
-      return Container(
-        height: height,
-        width: double.infinity,
-        color: Colors.grey.shade200,
-        child: const Icon(Icons.image_outlined, size: 48),
-      );
-    }
-
-    final isHttp = pathOrUrl.startsWith('http');
-    late final ImageProvider provider;
-    if (isHttp) {
-      provider = NetworkImage(pathOrUrl);
-    } else {
-      provider = FileImage(File(pathOrUrl));
-    }
-
-    return Image(
-      image: provider,
-      height: height,
-      width: double.infinity,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Container(
-        height: height,
-        width: double.infinity,
-        color: Colors.grey.shade200,
-        child: const Icon(Icons.broken_image_outlined, size: 48),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Material(
-        color: Colors.white,
-        elevation: 0,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Icon(Icons.inbox_outlined, size: 56, color: Colors.grey.shade600),
-              const SizedBox(height: 8),
-              const Text('لا توجد حالات بعد'),
-              Text(
-                'أضف أول حالة من تبويب "إضافة" في الشريط السفلي.',
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
