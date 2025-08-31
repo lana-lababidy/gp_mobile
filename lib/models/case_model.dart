@@ -12,11 +12,12 @@ enum CaseCategory {
 class CaseModel {
   final String id;
   final String title;
-  final String? imageUrl; // ممكن يكون مسار محلي مؤقت أو رابط لاحقًا
+  final String? imageUrl; // مسار محلي أو رابط
   final DateTime createdAt;
   final CaseCategory category;
-  final double goal; // عدد النقاط المطلوب
-  final double raised; // المحصول حتى الآن
+  final double goal; // المبلغ/النقاط المطلوبة
+  final double raised; // المحصّل
+  final String? description; // ✅ وصف الحالة (اختياري)
 
   const CaseModel({
     required this.id,
@@ -25,7 +26,8 @@ class CaseModel {
     required this.createdAt,
     required this.category,
     required this.goal,
-    this.raised = 0.0, // ✅ صارت اختيارية مع قيمة افتراضية
+    this.raised = 0.0,
+    this.description, // ✅ جديد
   });
 
   /// نسبة الإنجاز بين 0 و 1
