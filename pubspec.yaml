@@ -36,6 +36,6 @@ flutter:
   fonts:
     - family: Cetrl
       fonts:
-        - asset: assets/fonts/Cetrl-Regular.ttf
-        - asset: assets/fonts/Cetrl-Bold.ttf
+        - asset: assets/fonts/cetrl_regular.ttf
+        - asset: assets/fonts/cetrl_bold.ttf
           weight: 700
