@@ -1,7 +1,8 @@
 // lib/screens/case_details_screen.dart
+import 'dart:io';
 import 'package:flutter/material.dart';
 
-// الشاشات الجديدة (تأكد من وجودها)
+// الشاشات الجديدة
 import 'verification_info_screen.dart';
 import 'donors_list_screen.dart';
 
@@ -30,10 +31,55 @@ class CaseDetailsScreen extends StatelessWidget {
     return p.isNaN ? 0 : p;
   }
 
+  // === صورة الحالة (تدعم network / asset / file) ===
+  Widget _buildCaseImage() {
+    final dynamic raw =
+        caseModel?.imageUrl ?? caseModel?.image ?? caseModel?.imagePath;
+
+    if (raw == null) {
+      return _fallbackImage();
+    }
+
+    final String path = raw.toString().trim();
+    if (path.isEmpty) {
+      return _fallbackImage();
+    }
+
+    ImageProvider? provider;
+
+    try {
+      if (path.startsWith('http')) {
+        provider = NetworkImage(path);
+      } else if (path.startsWith('assets/')) {
+        provider = AssetImage(path);
+      } else if (path.startsWith('file://') || path.startsWith('/')) {
+        provider = FileImage(File(path.replaceFirst('file://', '')));
+      } else {
+        provider = AssetImage(path);
+      }
+    } catch (_) {
+      return _fallbackImage();
+    }
+
+    return Image(
+      image: provider,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _fallbackImage(),
+    );
+  }
+
+  Widget _fallbackImage() {
+    return Container(
+      color: Colors.grey[200],
+      child: const Center(
+        child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final String title = caseModel?.title ?? 'عنوان الحالة';
-    final String? imageUrl = caseModel?.imageUrl;
     final String createdAt =
         caseModel?.createdAt?.toString().split(' ').first ?? '';
     final num goal = (caseModel?.goal ?? 0);
@@ -78,15 +124,7 @@ class CaseDetailsScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                       child: AspectRatio(
                         aspectRatio: 16 / 9,
-                        child: imageUrl != null && imageUrl.isNotEmpty
-                            ? Image.network(imageUrl, fit: BoxFit.cover)
-                            : Container(
-                                color: Colors.grey[200],
-                                child: const Center(
-                                  child: Icon(Icons.image,
-                                      size: 48, color: Colors.grey),
-                                ),
-                              ),
+                        child: _buildCaseImage(),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -114,7 +152,7 @@ class CaseDetailsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
 
-                    // تاريخ وفئة (اختياري)
+                    // تاريخ وفئة
                     Row(
                       children: [
                         Icon(Icons.calendar_today,
