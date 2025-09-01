@@ -69,23 +69,23 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
         hintText: hint,
         hintStyle: TextStyle(color: kHint),
         helperText: helper,
-        helperStyle: TextStyle(color: Colors.grey.shade600),
+        helperStyle: TextStyle(color: Colors.grey),
         filled: true,
         fillColor: kFieldBg,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(color: kAccent, width: 1.6),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+          borderSide: BorderSide(color: kAccent, width: 1.6),
         ),
         contentPadding:
             const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
       );
 
   Widget _sectionHeader(String text, {IconData? icon, Color? tint}) {
-    final Color bubble = (tint ?? kAccent).withOpacity(.12);
+    final Color bubble = (tint ?? kAccent).withOpacity(0.12);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -133,7 +133,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 12,
             offset: const Offset(0, 6),
           )
@@ -155,9 +155,13 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
     try {
       await context.read<CasesController>().addCase(
             title: _titleCtrl.text.trim(),
+            description: _descCtrl.text.trim(), // ✅ ضروري لظهور الوصف
             category: _category!,
             targetPoints: target,
             imageFile: _mainImage,
+            beforeImageFile: _beforeImage,
+            phone:
+                _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
           );
 
       if (!mounted) return;
@@ -249,6 +253,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                         label: 'وصف الحالة',
                         hint: 'اكتب تفاصيل إضافية تساعد المتبرع...',
                         icon: Icons.notes_outlined,
+                        helper: 'سيظهر هذا النص تحت العنوان في تفاصيل الحالة',
                       ),
                     ),
                   ],
@@ -359,8 +364,9 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                         final raw = (v ?? '').replaceAll(RegExp(r'[^0-9]'), '');
                         if (raw.isEmpty) return 'أدخل المبلغ المستهدف';
                         final n = int.tryParse(raw);
-                        if (n == null || n <= 0)
+                        if (n == null || n <= 0) {
                           return 'أدخل رقمًا صحيحًا أكبر من الصفر';
+                        }
                         return null;
                       },
                     ),
@@ -468,13 +474,12 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                 ),
               ),
             ),
-            // أيقونة تعديل
             if (file != null)
               Positioned(
                 top: 8,
                 left: 8,
                 child: Material(
-                  color: Colors.black.withOpacity(.35),
+                  color: Colors.black.withOpacity(0.35),
                   borderRadius: BorderRadius.circular(10),
                   child: InkWell(
                     onTap: onPick,
