@@ -69,7 +69,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
         hintText: hint,
         hintStyle: TextStyle(color: kHint),
         helperText: helper,
-        helperStyle: TextStyle(color: Colors.grey),
+        helperStyle: const TextStyle(color: Colors.grey),
         filled: true,
         fillColor: kFieldBg,
         enabledBorder: OutlineInputBorder(

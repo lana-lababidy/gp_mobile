@@ -39,7 +39,7 @@ class CaseDetailsScreen extends StatelessWidget {
                     offset: Offset(0, 6),
                   )
                 ],
-                border: Border.all(color: Color(0xFFE7E7E7)),
+                border: Border.all(color: const Color(0xFFE7E7E7)),
               ),
               padding: const EdgeInsets.all(14),
               child: Column(

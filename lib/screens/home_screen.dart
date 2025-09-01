@@ -138,8 +138,8 @@ class _HomeScreenState extends State<HomeScreen> {
         color: const Color(0xFFE9F2FF),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        children: const [
+      child: const Row(
+        children: [
           Text(
             'أهلًا بك ',
             style: TextStyle(
