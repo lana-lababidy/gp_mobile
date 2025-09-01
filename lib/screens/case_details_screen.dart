@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/case_model.dart';
 
 class CaseDetailsScreen extends StatelessWidget {
@@ -9,10 +10,32 @@ class CaseDetailsScreen extends StatelessWidget {
   static const Color kNavy = Color(0xFF0A2A6C);
   static const Color kAccent = Color(0xFF23A8F5);
 
+  Future<void> _call(String number) async {
+    final uri = Uri.parse('tel:$number');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  String _categoryLabel(CaseCategory c) {
+    switch (c) {
+      case CaseCategory.money:
+        return 'تبرع مالي';
+      case CaseCategory.inKind:
+        return 'تبرع عيني';
+      case CaseCategory.physicalEffort:
+        return 'تبرع جهدي';
+      case CaseCategory.all:
+        return 'الكل';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final double progress = caseModel.progress.clamp(0, 1);
-    final String percent = (progress * 100).toStringAsFixed(0);
+    // ✅ حل مشكلة الـ num → double
+    final progress = caseModel.progress.clamp(0, 1.0).toDouble();
+    final percent = (progress * 100).toStringAsFixed(0);
+    final phone = caseModel.phone?.trim();
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -27,17 +50,15 @@ class CaseDetailsScreen extends StatelessWidget {
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // بطاقة الحالة
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: const [
                   BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 12,
-                    offset: Offset(0, 6),
-                  )
+                      color: Color(0x14000000),
+                      blurRadius: 12,
+                      offset: Offset(0, 6))
                 ],
                 border: Border.all(color: const Color(0xFFE7E7E7)),
               ),
@@ -57,35 +78,45 @@ class CaseDetailsScreen extends StatelessWidget {
                     ),
                   const SizedBox(height: 12),
 
-                  // العنوان
                   Text(
                     caseModel.title,
                     style: const TextStyle(
-                      color: kNavy,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                      // fontFamily: 'Cetrl', // فعّلها إذا ضفت الخط
-                    ),
+                        color: kNavy,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18),
                   ),
+
                   const SizedBox(height: 6),
 
-                  // الوصف (إن وُجد وغير فارغ)
-                  ...() {
-                    final String desc = caseModel.description.trim();
-                    if (desc.isEmpty) return <Widget>[];
-                    return <Widget>[
-                      Text(
-                        desc,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: Color(0xFF454545),
-                          height: 1.5,
-                        ),
-                        textAlign: TextAlign.start,
+                  // الوصف
+                  if (caseModel.description.trim().isNotEmpty) ...[
+                    Text(
+                      caseModel.description,
+                      style: const TextStyle(
+                          fontSize: 15, color: Color(0xFF454545), height: 1.5),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
+                  // رقم التواصل
+                  if (phone != null && phone.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.phone, color: kNavy, size: 18),
+                          const SizedBox(width: 6),
+                          TextButton(
+                            onPressed: () => _call(phone),
+                            child: Text(
+                              phone,
+                              style: const TextStyle(
+                                  color: kNavy, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 10),
-                    ];
-                  }(),
+                    ),
 
                   // التاريخ + التصنيف
                   Row(
@@ -108,15 +139,17 @@ class CaseDetailsScreen extends StatelessWidget {
                   // نسبة التقدم
                   Row(
                     children: [
-                      Text('$percent%',
-                          style: const TextStyle(
-                              color: Color(0xFF6B7280), fontSize: 12)),
+                      Text(
+                        '$percent%',
+                        style: const TextStyle(
+                            color: Color(0xFF6B7280), fontSize: 12),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: LinearProgressIndicator(
-                            value: progress,
+                            value: progress, // ✅ صار double
                             minHeight: 8,
                             backgroundColor: const Color(0xFFE9EEF5),
                             valueColor:
@@ -162,10 +195,7 @@ class CaseDetailsScreen extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // زر تبرع
             SizedBox(
               height: 52,
               child: ElevatedButton(
@@ -175,8 +205,7 @@ class CaseDetailsScreen extends StatelessWidget {
                   shadowColor: Colors.transparent,
                   padding: EdgeInsets.zero,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
+                      borderRadius: BorderRadius.circular(14)),
                 ),
                 child: Ink(
                   decoration: BoxDecoration(
@@ -184,19 +213,16 @@ class CaseDetailsScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: const [
                       BoxShadow(
-                        color: Color(0x3323A8F5),
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
-                      )
+                          color: Color(0x3323A8F5),
+                          blurRadius: 10,
+                          offset: Offset(0, 4))
                     ],
                   ),
                   child: const Center(
                     child: Text(
                       'تبرع',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+                          color: Colors.white, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
@@ -206,18 +232,5 @@ class CaseDetailsScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _categoryLabel(CaseCategory c) {
-    switch (c) {
-      case CaseCategory.money:
-        return 'تبرع مالي';
-      case CaseCategory.inKind:
-        return 'تبرع عيني';
-      case CaseCategory.physicalEffort:
-        return 'تبرع جهدي';
-      case CaseCategory.all:
-        return 'الكل';
-    }
   }
 }

@@ -17,7 +17,6 @@ class AddCaseScreen extends StatefulWidget {
 class _AddCaseScreenState extends State<AddCaseScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // الحقول
   final TextEditingController _titleCtrl = TextEditingController();
   final TextEditingController _descCtrl = TextEditingController();
   final TextEditingController _phoneCtrl = TextEditingController();
@@ -29,7 +28,6 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
 
   bool _isSaving = false;
 
-  // ألوان موحدة
   static const Color kNavy = Color(0xFF0A2A6C);
   static const Color kAccent = Color(0xFF23A8F5);
   static const Color kCardBg = Colors.white;
@@ -48,8 +46,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
   }
 
   Future<void> _pickImage(void Function(File) setFile) async {
-    final picker = ImagePicker();
-    final x = await picker.pickImage(source: ImageSource.gallery);
+    final x = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (x != null) setState(() => setFile(File(x.path)));
   }
 
@@ -61,15 +58,12 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
   }) =>
       InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(
-          color: kNavy,
-          fontWeight: FontWeight.w600,
-        ),
+        labelStyle: const TextStyle(color: kNavy, fontWeight: FontWeight.w600),
         prefixIcon: icon != null ? Icon(icon, color: kNavy) : null,
         hintText: hint,
         hintStyle: TextStyle(color: kHint),
         helperText: helper,
-        helperStyle: const TextStyle(color: Colors.grey),
+        helperStyle: TextStyle(color: Colors.grey),
         filled: true,
         fillColor: kFieldBg,
         enabledBorder: OutlineInputBorder(
@@ -89,73 +83,58 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            if (icon != null)
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: bubble,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 16, color: kNavy),
-              ),
-            if (icon != null) const SizedBox(width: 8),
-            Text(
-              text,
-              style: const TextStyle(
-                color: kNavy,
-                fontWeight: FontWeight.w800,
-                fontSize: 16,
-              ),
+        Row(children: [
+          if (icon != null)
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: bubble, shape: BoxShape.circle),
+              child: Icon(icon, size: 16, color: kNavy),
             ),
-          ],
-        ),
+          if (icon != null) const SizedBox(width: 8),
+          Text(text,
+              style: const TextStyle(
+                  color: kNavy, fontWeight: FontWeight.w800, fontSize: 16)),
+        ]),
         const SizedBox(height: 8),
         Container(
           height: 3,
           width: 80,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(2),
-            gradient: LinearGradient(
-              colors: [kNavy, tint ?? kAccent],
-            ),
+            gradient: LinearGradient(colors: [kNavy, tint ?? kAccent]),
           ),
         ),
       ],
     );
   }
 
-  Widget _card(Widget child) {
-    return Container(
-      decoration: BoxDecoration(
-        color: kCardBg,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          )
-        ],
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: child,
-    );
-  }
+  Widget _card(Widget child) => Container(
+        decoration: BoxDecoration(
+          color: kCardBg,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 12,
+                offset: const Offset(0, 6))
+          ],
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: child,
+      );
 
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    final raw = _amountCtrl.text.replaceAll(RegExp(r'[^0-9]'), '');
-    final target = int.tryParse(raw) ?? 0;
+    final target =
+        int.tryParse(_amountCtrl.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
 
     setState(() => _isSaving = true);
     try {
       await context.read<CasesController>().addCase(
             title: _titleCtrl.text.trim(),
-            description: _descCtrl.text.trim(), // ✅ ضروري لظهور الوصف
+            description: _descCtrl.text.trim(),
             category: _category!,
             targetPoints: target,
             imageFile: _mainImage,
@@ -165,44 +144,16 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
           );
 
       if (!mounted) return;
-      _successSnack('تمت إضافة الحالة بنجاح');
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تمت إضافة الحالة بنجاح')));
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      _errorSnack('فشل الحفظ: $e');
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('فشل الحفظ: $e')));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
-  }
-
-  void _successSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(children: [
-          const Icon(Icons.check_circle, color: Colors.white),
-          const SizedBox(width: 8),
-          Expanded(child: Text(msg)),
-        ]),
-        backgroundColor: const Color(0xFF2E7D32),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
-  void _errorSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(children: [
-          const Icon(Icons.warning_amber_rounded, color: Colors.white),
-          const SizedBox(width: 8),
-          Expanded(child: Text(msg)),
-        ]),
-        backgroundColor: const Color(0xFFD32F2F),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
   }
 
   @override
@@ -215,7 +166,6 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
           centerTitle: true,
           backgroundColor: kNavy,
           foregroundColor: Colors.white,
-          elevation: 0,
         ),
         backgroundColor: const Color(0xFFF7F8FA),
         body: SafeArea(
@@ -224,7 +174,6 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),
               children: [
-                // -------- بيانات الحالة --------
                 _card(Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -234,12 +183,10 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _titleCtrl,
-                      style: const TextStyle(color: Colors.black87),
                       decoration: _dec(
-                        label: 'عنوان الحالة',
-                        hint: 'مثلاً: تجهيز صف للأطفال ذوي الاحتياجات الخاصة',
-                        icon: Icons.title,
-                      ),
+                          label: 'عنوان الحالة',
+                          hint: 'مثلاً: تجهيز صف للأطفال...',
+                          icon: Icons.title),
                       validator: (v) => (v == null || v.trim().isEmpty)
                           ? 'أدخل عنوان الحالة'
                           : null,
@@ -247,20 +194,17 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _descCtrl,
-                      style: const TextStyle(color: Colors.black87),
                       maxLines: 4,
                       decoration: _dec(
-                        label: 'وصف الحالة',
-                        hint: 'اكتب تفاصيل إضافية تساعد المتبرع...',
-                        icon: Icons.notes_outlined,
-                        helper: 'سيظهر هذا النص تحت العنوان في تفاصيل الحالة',
-                      ),
+                          label: 'وصف الحالة',
+                          hint: 'اكتب تفاصيل إضافية...',
+                          icon: Icons.notes_outlined,
+                          helper:
+                              'سيظهر هذا النص تحت العنوان في تفاصيل الحالة'),
                     ),
                   ],
                 )),
                 const SizedBox(height: 16),
-
-                // -------- الصور --------
                 _card(Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -287,8 +231,6 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                   ],
                 )),
                 const SizedBox(height: 16),
-
-                // -------- التواصل والتصنيف --------
                 _card(Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -298,25 +240,22 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _phoneCtrl,
-                      style: const TextStyle(color: Colors.black87),
                       keyboardType: TextInputType.phone,
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]'))
                       ],
                       decoration: _dec(
-                        label: 'رقم هاتف للتواصل',
-                        hint: '+963 9xx xxx xxx',
-                        icon: Icons.phone_outlined,
-                      ),
+                          label: 'رقم هاتف للتواصل',
+                          hint: '+963 9xx xxx xxx',
+                          icon: Icons.phone_outlined),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<CaseCategory>(
                       value: _category,
                       decoration: _dec(
-                        label: 'تصنيف الحالة',
-                        hint: 'اختر نوع التبرع',
-                        icon: Icons.segment_outlined,
-                      ),
+                          label: 'تصنيف الحالة',
+                          hint: 'اختر نوع التبرع',
+                          icon: Icons.segment_outlined),
                       items: const [
                         DropdownMenuItem(
                             value: CaseCategory.money,
@@ -334,8 +273,6 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                   ],
                 )),
                 const SizedBox(height: 16),
-
-                // -------- التمويل --------
                 _card(Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -343,15 +280,12 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                         icon: Icons.attach_money_rounded,
                         tint: const Color(0xFF2E7D32)),
                     const SizedBox(height: 12),
-                    const Text(
-                      'المبلغ المستهدف',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w700, color: kNavy),
-                    ),
+                    const Text('المبلغ المستهدف',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700, color: kNavy)),
                     const SizedBox(height: 6),
                     TextFormField(
                       controller: _amountCtrl,
-                      style: const TextStyle(color: Colors.black87),
                       keyboardType: TextInputType.number,
                       inputFormatters: [ThousandsSeparatorFormatter()],
                       decoration: _dec(
@@ -364,19 +298,15 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                         final raw = (v ?? '').replaceAll(RegExp(r'[^0-9]'), '');
                         if (raw.isEmpty) return 'أدخل المبلغ المستهدف';
                         final n = int.tryParse(raw);
-                        if (n == null || n <= 0) {
+                        if (n == null || n <= 0)
                           return 'أدخل رقمًا صحيحًا أكبر من الصفر';
-                        }
                         return null;
                       },
                     ),
                   ],
                 )),
                 const SizedBox(height: 20),
-
-                // زر الحفظ
                 SizedBox(
-                  width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
                     onPressed: _isSaving ? null : _save,
@@ -385,8 +315,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                       shadowColor: Colors.transparent,
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                          borderRadius: BorderRadius.circular(14)),
                     ),
                     child: Ink(
                       decoration: BoxDecoration(
@@ -395,10 +324,9 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: const [
                           BoxShadow(
-                            color: Color(0x3323A8F5),
-                            blurRadius: 10,
-                            offset: Offset(0, 4),
-                          )
+                              color: Color(0x3323A8F5),
+                              blurRadius: 10,
+                              offset: Offset(0, 4)),
                         ],
                       ),
                       child: Center(
@@ -407,15 +335,11 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                                 width: 18,
                                 height: 18,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Text(
-                                'حفظ',
+                                    strokeWidth: 2, color: Colors.white))
+                            : const Text('حفظ',
                                 style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600)),
                       ),
                     ),
                   ),
@@ -428,7 +352,6 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
     );
   }
 
-  // صورة مع أنيميشن + أيقونة تعديل
   Widget _imagePickerBox({
     required File? file,
     required VoidCallback onPick,
@@ -454,23 +377,19 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                   child: file == null
                       ? Center(
                           key: const ValueKey('placeholder'),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.add_photo_alternate_outlined,
-                                  size: 36, color: kNavy),
-                              const SizedBox(height: 6),
-                              Text(placeholder, style: TextStyle(color: kHint)),
-                            ],
-                          ),
+                          child:
+                              Column(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.add_photo_alternate_outlined,
+                                size: 36, color: kNavy),
+                            const SizedBox(height: 6),
+                            Text(placeholder, style: TextStyle(color: kHint)),
+                          ]),
                         )
-                      : Image.file(
+                      : Image.file(file,
                           key: const ValueKey('image'),
-                          file,
                           fit: BoxFit.cover,
                           width: double.infinity,
-                          height: double.infinity,
-                        ),
+                          height: double.infinity),
                 ),
               ),
             ),
@@ -498,29 +417,20 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
   }
 }
 
-/// Formatter للألوف
 class ThousandsSeparatorFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
+      TextEditingValue oldValue, TextEditingValue newValue) {
     final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.isEmpty) {
-      return const TextEditingValue(text: '');
-    }
-    final buffer = StringBuffer();
+    if (digits.isEmpty) return const TextEditingValue(text: '');
+    final b = StringBuffer();
     for (int i = 0; i < digits.length; i++) {
-      final indexFromRight = digits.length - i;
-      buffer.write(digits[i]);
-      if (indexFromRight > 1 && indexFromRight % 3 == 1) {
-        buffer.write(',');
-      }
+      final idxFromRight = digits.length - i;
+      b.write(digits[i]);
+      if (idxFromRight > 1 && idxFromRight % 3 == 1) b.write(',');
     }
-    final formatted = buffer.toString();
+    final s = b.toString();
     return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
+        text: s, selection: TextSelection.collapsed(offset: s.length));
   }
 }
