@@ -50,11 +50,18 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
 
-      // الثيم العام
+      // الثيم العام (فاتح + داكن)
       theme: ThemeData(
         useMaterial3: true,
-        fontFamily: 'Arial',
+        fontFamily: 'Cetrl', // ✅ الخط الافتراضي
         colorSchemeSeed: const Color(0xFF0A2A6C),
+        brightness: Brightness.light,
+      ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        fontFamily: 'Cetrl', // ✅ الخط الافتراضي
+        colorSchemeSeed: const Color(0xFF0A2A6C),
+        brightness: Brightness.dark,
       ),
 
       // دعم العربية وواجهة RTL
