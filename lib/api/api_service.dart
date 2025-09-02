@@ -1,38 +1,63 @@
 // lib/api/api_service.dart
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../constants/api.dart';
 
 class ApiService {
+  // جرّب مجموعة محاولات لغاية ما يزبط واحد (2xx)
+  static Future<http.Response> _tryMany(
+      List<Future<http.Response>> attempts) async {
+    http.Response? last;
+    for (final a in attempts) {
+      try {
+        final res = await a;
+        if (res.statusCode >= 200 && res.statusCode < 300) return res;
+        last = res;
+      } catch (_) {}
+    }
+    throw Exception('فشل الطلب: ${last?.statusCode} ${last?.body}');
+  }
+
+  static String _toPlus963(String nine) {
+    // إدخال متوقع 09XXXXXXXX → +9639XXXXXXXX
+    if (nine.startsWith('09') && nine.length == 10) {
+      return '+963' + nine.substring(1); // +9639XXXXXXXX
+    }
+    return nine;
+  }
+
   /// إرسال رمز OTP
   static Future<void> sendOtp({required String mobileNumber}) async {
-    // المحاولة 1: x-www-form-urlencoded بالحقل mobile_number
-    var res = await http.post(
-      Uri.parse(ApiConstants.sendOtp),
-      headers: {
-        'Accept': 'application/json',
-        // لا تحدد Content-Type ليبعث كـ form-urlencoded تلقائيًا
-      },
-      body: {
-        'mobile_number': mobileNumber,
-      },
-    );
+    final nine = mobileNumber; // 09XXXXXXXX
+    final plus = _toPlus963(mobileNumber); // +9639XXXXXXXX
 
-    // بعض الـ backends ترجع 401/422 إذا الاسم غلط — جرب mobile كبديل
-    if (res.statusCode == 401 ||
-        res.statusCode == 400 ||
-        res.statusCode == 422) {
-      res = await http.post(
-        Uri.parse(ApiConstants.sendOtp),
-        headers: {'Accept': 'application/json'},
-        body: {
-          'mobile': mobileNumber, // fallback
-        },
-      );
+    final urls = [ApiConstants.sendOtp]; // عادة نفس /cwm
+
+    // محاولات form-urlencoded بأسماء حقول مختلفة وصيغ رقم مختلفة
+    final attempts = <Future<http.Response>>[];
+    for (final url in urls) {
+      for (final field in ['mobile_number', 'mobile', 'phone']) {
+        for (final value in [nine, plus]) {
+          // 1) x-www-form-urlencoded
+          attempts.add(http.post(
+            Uri.parse(url),
+            headers: {'Accept': 'application/json'},
+            body: {field: value},
+          ));
+          // 2) JSON
+          attempts.add(http.post(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({field: value}),
+          ));
+        }
+      }
     }
 
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception('فشل الإرسال: ${res.statusCode} ${res.body}');
-    }
+    await _tryMany(attempts);
   }
 
   /// التحقق من رمز OTP
@@ -40,32 +65,34 @@ class ApiService {
     required String mobileNumber,
     required String otp,
   }) async {
-    // المحاولة 1: x-www-form-urlencoded بالحقلين mobile_number + otp
-    var res = await http.post(
-      Uri.parse(ApiConstants.verifyOtp),
-      headers: {'Accept': 'application/json'},
-      body: {
-        'mobile_number': mobileNumber,
-        'otp': otp,
-      },
-    );
+    final nine = mobileNumber;
+    final plus = _toPlus963(mobileNumber);
 
-    // fallback إذا الاسم مختلف
-    if (res.statusCode == 401 ||
-        res.statusCode == 400 ||
-        res.statusCode == 422) {
-      res = await http.post(
-        Uri.parse(ApiConstants.verifyOtp),
-        headers: {'Accept': 'application/json'},
-        body: {
-          'mobile': mobileNumber, // fallback
-          'otp': otp,
-        },
-      );
+    final urls = [ApiConstants.verifyOtp];
+
+    final attempts = <Future<http.Response>>[];
+    for (final url in urls) {
+      for (final field in ['mobile_number', 'mobile', 'phone']) {
+        for (final value in [nine, plus]) {
+          // 1) x-www-form-urlencoded
+          attempts.add(http.post(
+            Uri.parse(url),
+            headers: {'Accept': 'application/json'},
+            body: {field: value, 'otp': otp},
+          ));
+          // 2) JSON
+          attempts.add(http.post(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({field: value, 'otp': otp}),
+          ));
+        }
+      }
     }
 
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception('فشل التحقق: ${res.statusCode} ${res.body}');
-    }
+    await _tryMany(attempts);
   }
 }
