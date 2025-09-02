@@ -33,29 +33,32 @@ class _PhoneScreenState extends State<PhoneScreen> {
   Future<void> _send() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // ✅ سكّر الكيبورد
+    FocusScope.of(context).unfocus();
+
     final phone = toApiPhone(_phoneCtrl.text.trim());
     setState(() => _loading = true);
 
     try {
       final res = await ApiService.sendOtp(phone: phone);
 
-      // (اختياري) عرض devCode إن وُجد للتجربة
       if (!mounted) return;
       if (res.devCode != null && res.devCode!.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('devCode: ${res.devCode}',
-                  textDirection: TextDirection.rtl)),
+            content: Text('devCode: ${res.devCode}',
+                textDirection: TextDirection.rtl),
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content:
-                  Text('تم إرسال الرمز', textDirection: TextDirection.rtl)),
+            content: Text('تم إرسال الرمز', textDirection: TextDirection.rtl),
+          ),
         );
       }
 
-      // ✅ افتح شاشة OTP دائماً بعد الإرسال (حتى لو رجع token من السيرفر)
+      // ✅ افتح شاشة OTP بعد الإرسال
       Navigator.pushNamed(context, '/otp', arguments: phone);
     } catch (e) {
       if (!mounted) return;
@@ -83,6 +86,8 @@ class _PhoneScreenState extends State<PhoneScreen> {
                 TextFormField(
                   controller: _phoneCtrl,
                   keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _send(), // ✅ إدخال من الكيبورد
                   decoration: const InputDecoration(
                     labelText: 'رقم الهاتف',
                     hintText: 'مثال: +9639XXXXXXXX أو 09XXXXXXXX',
@@ -92,7 +97,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
                     if (v == null || v.trim().isEmpty) return 'أدخل رقم الهاتف';
                     final x = v.replaceAll(RegExp(r'\s+|-'), '');
                     final validSyria =
-                        RegExp(r'^(\+9639\d{8}|09\d{8})$'); // سوريا فقط الآن
+                        RegExp(r'^(\+9639\d{8}|09\d{8})$'); // سوريا فقط
                     if (!validSyria.hasMatch(x)) return 'رجاءً أدخل رقم صالح';
                     return null;
                   },
