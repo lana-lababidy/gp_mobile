@@ -20,20 +20,57 @@ class _PhoneScreenState extends State<PhoneScreen> {
     super.dispose();
   }
 
+  // 1) تحويل الأرقام العربية/الفارسية إلى إنجليزية
+  String _toEnDigits(String s) {
+    const ar = '٠١٢٣٤٥٦٧٨٩';
+    const fa = '۰۱۲۳۴۵۶۷۸۹';
+    const en = '0123456789';
+    final buf = StringBuffer();
+    for (final ch in s.runes) {
+      final c = String.fromCharCode(ch);
+      final iAr = ar.indexOf(c);
+      if (iAr != -1) {
+        buf.write(en[iAr]);
+        continue;
+      }
+      final iFa = fa.indexOf(c);
+      if (iFa != -1) {
+        buf.write(en[iFa]);
+        continue;
+      }
+      buf.write(c);
+    }
+    return buf.toString();
+  }
+
+  // 2) تنظيف الرقم من المسافات/الشرطات/الرموز غير المسموحة
+  String _cleanPhone(String input) {
+    var v = _toEnDigits(input).trim();
+    // احذف كل شيء غير الأرقام أو +
+    v = v.replaceAll(RegExp(r'[^\d\+]+'), '');
+    // اسمح بـ + فقط إذا كانت في أول السلسلة
+    if (v.length > 1) v = v[0] + v.substring(1).replaceAll('+', '');
+    return v;
+  }
+
+  // 3) التطبيع لصيغة الـ API: +9639XXXXXXXX -> 09XXXXXXXX (سوريا)
   String normalizePhone(String input) {
-    final v = input.replaceAll(RegExp(r'\s+|-'), '');
+    final v = _cleanPhone(input);
     if (v.startsWith('+963')) {
-      final rest = v.substring(4);
+      final rest = v.substring(4); // متوقع 9XXXXXXXX
       return '0$rest';
     }
+    // اترك 09XXXXXXXX كما هو
     return v;
   }
 
   Future<void> _send() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // سكّر الكيبورد
     FocusScope.of(context).unfocus();
 
-    final phone = normalizePhone(_phoneCtrl.text.trim());
+    final phone = normalizePhone(_phoneCtrl.text);
     setState(() => _loading = true);
 
     try {
@@ -46,11 +83,13 @@ class _PhoneScreenState extends State<PhoneScreen> {
         ),
       );
 
+      // انتقال لشاشة OTP وتمرير الرقم
       Navigator.pushNamed(context, '/otp', arguments: phone);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString(), textDirection: TextDirection.rtl)),
+        SnackBar(
+            content: Text(e.toString()), behavior: SnackBarBehavior.floating),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -82,9 +121,8 @@ class _PhoneScreenState extends State<PhoneScreen> {
                   ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'أدخل رقم الهاتف';
-                    final x = v.replaceAll(RegExp(r'\s+|-'), '');
-                    final validSyria =
-                        RegExp(r'^(\+9639\d{8}|09\d{8})$'); // سوريا
+                    final x = _cleanPhone(v);
+                    final validSyria = RegExp(r'^(\+9639\d{8}|09\d{8})$');
                     if (!validSyria.hasMatch(x)) return 'رجاءً أدخل رقم صالح';
                     return null;
                   },
