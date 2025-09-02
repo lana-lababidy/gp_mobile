@@ -1,7 +1,6 @@
 // lib/screens/phone_screen.dart
 import 'package:flutter/material.dart';
 import '../api/api_service.dart';
-import 'otp_screen.dart';
 
 class PhoneScreen extends StatefulWidget {
   const PhoneScreen({super.key});
@@ -21,39 +20,47 @@ class _PhoneScreenState extends State<PhoneScreen> {
     super.dispose();
   }
 
+  // تحويل الرقم لصيغة الـ API (سوريا): +9639XXXXXXXX → 09XXXXXXXX
+  String toApiPhone(String input) {
+    final v = input.replaceAll(RegExp(r'\s+|-'), '');
+    if (v.startsWith('+963')) {
+      final rest = v.substring(4);
+      return '0$rest';
+    }
+    return v;
+  }
+
   Future<void> _sendOtp() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final phone = _normalizePhone(_phoneCtrl.text.trim());
+    final phone = toApiPhone(_phoneCtrl.text.trim());
     setState(() => _loading = true);
 
     try {
-      await ApiService.sendOtp(phone: phone);
+      final res = await ApiService.sendOtp(phone: phone);
+
+      // عرض devCode للتجربة (إن وُجد)
+      if (res.devCode != null && res.devCode!.isNotEmpty) {
+        // ملاحظة: هذا فقط للـ DEV
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('devCode: ${res.devCode}',
+                textDirection: TextDirection.rtl),
+          ),
+        );
+      }
 
       if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => OTPScreen(phone: phone),
-        ),
-      );
+      // انتقل إلى صفحة OTP بالرقم كـ argument
+      Navigator.pushNamed(context, '/otp', arguments: phone);
     } catch (e) {
-      _showSnack(e.toString());
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString(), textDirection: TextDirection.rtl)),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  String _normalizePhone(String v) {
-    // تنظيف مبسّط: إزالة المسافات والرموز
-    final cleaned = v.replaceAll(RegExp(r'\s+|-'), '');
-    return cleaned;
-  }
-
-  void _showSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg, textDirection: TextDirection.rtl)),
-    );
   }
 
   @override
@@ -68,21 +75,21 @@ class _PhoneScreenState extends State<PhoneScreen> {
             key: _formKey,
             child: Column(
               children: [
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: _phoneCtrl,
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
                     labelText: 'رقم الهاتف',
-                    hintText: 'مثال: +9639XXXXXXXX',
+                    hintText: 'مثال: +9639XXXXXXXX أو 09XXXXXXXX',
                     border: OutlineInputBorder(),
                   ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'أدخل رقم الهاتف';
                     final x = v.replaceAll(RegExp(r'\s+|-'), '');
-                    if (!RegExp(r'^\+?\d{8,15}$').hasMatch(x)) {
-                      return 'رجاءً أدخل رقم صحيح';
-                    }
+                    final validSyria =
+                        RegExp(r'^(\+9639\d{8}|09\d{8})$'); // سوريا فقط الآن
+                    if (!validSyria.hasMatch(x)) return 'رجاءً أدخل رقم صالح';
                     return null;
                   },
                 ),

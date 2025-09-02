@@ -2,7 +2,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../api/api_service.dart';
-import 'personal_info_screen.dart'; // الوجهة القادمة بعد التحقق الناجح
+import 'personal_info_screen.dart';
 
 class OTPScreen extends StatefulWidget {
   final String phone;
@@ -17,7 +17,7 @@ class _OTPScreenState extends State<OTPScreen> {
   final _codeCtrl = TextEditingController();
   bool _loading = false;
 
-  // عدّاد لإعادة الإرسال
+  // عدّاد إعادة الإرسال
   static const int _resendSeconds = 60;
   int _left = _resendSeconds;
   Timer? _timer;
@@ -54,6 +54,7 @@ class _OTPScreenState extends State<OTPScreen> {
 
     setState(() => _loading = true);
     try {
+      // ✔️ أزلنا المتغيّر غير المستخدم (res)
       await ApiService.verifyOtp(
         phone: widget.phone,
         code: _codeCtrl.text.trim(),
@@ -65,7 +66,10 @@ class _OTPScreenState extends State<OTPScreen> {
         MaterialPageRoute(builder: (_) => const PersonalInfoScreen()),
       );
     } catch (e) {
-      _showSnack(e.toString());
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString(), textDirection: TextDirection.rtl)),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -73,22 +77,32 @@ class _OTPScreenState extends State<OTPScreen> {
 
   Future<void> _resend() async {
     if (_left > 0) return;
+    setState(() => _loading = true);
     try {
-      setState(() => _loading = true);
-      await ApiService.sendOtp(phone: widget.phone);
-      _showSnack('تم إرسال رمز جديد');
+      final r = await ApiService.sendOtp(phone: widget.phone);
+      // عرض devCode في بيئة التطوير إن وُجد
+      if (r.devCode != null && r.devCode!.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('devCode: ${r.devCode}',
+                  textDirection: TextDirection.rtl)),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text('تم إرسال رمز جديد', textDirection: TextDirection.rtl)),
+        );
+      }
       _startTimer();
     } catch (e) {
-      _showSnack(e.toString());
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString(), textDirection: TextDirection.rtl)),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  void _showSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg, textDirection: TextDirection.rtl)),
-    );
   }
 
   @override
@@ -144,7 +158,7 @@ class _OTPScreenState extends State<OTPScreen> {
                         ? 'إعادة إرسال الرمز'
                         : 'يمكن إعادة الإرسال خلال $_left ثانية',
                   ),
-                )
+                ),
               ],
             ),
           ),
