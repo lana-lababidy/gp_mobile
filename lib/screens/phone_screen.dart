@@ -1,7 +1,6 @@
 // lib/screens/phone_screen.dart
 import 'package:flutter/material.dart';
 import '../api/api_service.dart';
-import 'personal_info_screen.dart';
 
 class PhoneScreen extends StatefulWidget {
   const PhoneScreen({super.key});
@@ -21,7 +20,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
     super.dispose();
   }
 
-  // +9639XXXXXXXX → 09XXXXXXXX (سوريا)
+  /// تحويل الرقم لصيغة الـ API (سوريا): +9639XXXXXXXX → 09XXXXXXXX
   String toApiPhone(String input) {
     final v = input.replaceAll(RegExp(r'\s+|-'), '');
     if (v.startsWith('+963')) {
@@ -40,23 +39,8 @@ class _PhoneScreenState extends State<PhoneScreen> {
     try {
       final res = await ApiService.sendOtp(phone: phone);
 
-      // لو السيرفر رجّع token مباشرة (مثل نتيجة لانا) → ندخل فورًا
-      if (res.token != null && res.token!.isNotEmpty) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('تم تسجيل الدخول بنجاح',
-                  textDirection: TextDirection.rtl)),
-        );
-        // TODO: احفظ الـ token لو حابب (flutter_secure_storage)
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const PersonalInfoScreen()),
-        );
-        return;
-      }
-
-      // وإلا: تابع إلى شاشة OTP (بحال لاحقًا فعّلنا verify endpoint)
+      // (اختياري) عرض devCode إن وُجد للتجربة
+      if (!mounted) return;
       if (res.devCode != null && res.devCode!.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -71,7 +55,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
         );
       }
 
-      if (!mounted) return;
+      // ✅ افتح شاشة OTP دائماً بعد الإرسال (حتى لو رجع token من السيرفر)
       Navigator.pushNamed(context, '/otp', arguments: phone);
     } catch (e) {
       if (!mounted) return;
@@ -107,7 +91,8 @@ class _PhoneScreenState extends State<PhoneScreen> {
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'أدخل رقم الهاتف';
                     final x = v.replaceAll(RegExp(r'\s+|-'), '');
-                    final validSyria = RegExp(r'^(\+9639\d{8}|09\d{8})$');
+                    final validSyria =
+                        RegExp(r'^(\+9639\d{8}|09\d{8})$'); // سوريا فقط الآن
                     if (!validSyria.hasMatch(x)) return 'رجاءً أدخل رقم صالح';
                     return null;
                   },
@@ -120,14 +105,16 @@ class _PhoneScreenState extends State<PhoneScreen> {
                     onPressed: _loading ? null : _send,
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     child: _loading
                         ? const SizedBox(
                             width: 22,
                             height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2.2))
-                        : const Text('إرسال'),
+                            child: CircularProgressIndicator(strokeWidth: 2.2),
+                          )
+                        : const Text('إرسال الرمز'),
                   ),
                 ),
               ],
