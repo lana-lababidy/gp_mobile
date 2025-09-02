@@ -1,6 +1,7 @@
 // lib/screens/phone_screen.dart
 import 'package:flutter/material.dart';
 import '../api/api_service.dart';
+import 'personal_info_screen.dart';
 
 class PhoneScreen extends StatefulWidget {
   const PhoneScreen({super.key});
@@ -20,7 +21,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
     super.dispose();
   }
 
-  // تحويل الرقم لصيغة الـ API (سوريا): +9639XXXXXXXX → 09XXXXXXXX
+  // +9639XXXXXXXX → 09XXXXXXXX (سوريا)
   String toApiPhone(String input) {
     final v = input.replaceAll(RegExp(r'\s+|-'), '');
     if (v.startsWith('+963')) {
@@ -30,7 +31,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
     return v;
   }
 
-  Future<void> _sendOtp() async {
+  Future<void> _send() async {
     if (!_formKey.currentState!.validate()) return;
 
     final phone = toApiPhone(_phoneCtrl.text.trim());
@@ -39,19 +40,38 @@ class _PhoneScreenState extends State<PhoneScreen> {
     try {
       final res = await ApiService.sendOtp(phone: phone);
 
-      // عرض devCode للتجربة (إن وُجد)
+      // لو السيرفر رجّع token مباشرة (مثل نتيجة لانا) → ندخل فورًا
+      if (res.token != null && res.token!.isNotEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('تم تسجيل الدخول بنجاح',
+                  textDirection: TextDirection.rtl)),
+        );
+        // TODO: احفظ الـ token لو حابب (flutter_secure_storage)
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const PersonalInfoScreen()),
+        );
+        return;
+      }
+
+      // وإلا: تابع إلى شاشة OTP (بحال لاحقًا فعّلنا verify endpoint)
       if (res.devCode != null && res.devCode!.isNotEmpty) {
-        // ملاحظة: هذا فقط للـ DEV
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('devCode: ${res.devCode}',
-                textDirection: TextDirection.rtl),
-          ),
+              content: Text('devCode: ${res.devCode}',
+                  textDirection: TextDirection.rtl)),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text('تم إرسال الرمز', textDirection: TextDirection.rtl)),
         );
       }
 
       if (!mounted) return;
-      // انتقل إلى صفحة OTP بالرقم كـ argument
       Navigator.pushNamed(context, '/otp', arguments: phone);
     } catch (e) {
       if (!mounted) return;
@@ -87,8 +107,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'أدخل رقم الهاتف';
                     final x = v.replaceAll(RegExp(r'\s+|-'), '');
-                    final validSyria =
-                        RegExp(r'^(\+9639\d{8}|09\d{8})$'); // سوريا فقط الآن
+                    final validSyria = RegExp(r'^(\+9639\d{8}|09\d{8})$');
                     if (!validSyria.hasMatch(x)) return 'رجاءً أدخل رقم صالح';
                     return null;
                   },
@@ -98,19 +117,17 @@ class _PhoneScreenState extends State<PhoneScreen> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: _loading ? null : _sendOtp,
+                    onPressed: _loading ? null : _send,
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                          borderRadius: BorderRadius.circular(14)),
                     ),
                     child: _loading
                         ? const SizedBox(
                             width: 22,
                             height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2.2),
-                          )
-                        : const Text('إرسال الرمز'),
+                            child: CircularProgressIndicator(strokeWidth: 2.2))
+                        : const Text('إرسال'),
                   ),
                 ),
               ],
