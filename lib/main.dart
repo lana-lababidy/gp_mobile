@@ -103,7 +103,7 @@ class MyApp extends StatelessWidget {
         if (settings.name == '/otp') {
           final phone = settings.arguments as String? ?? '';
           return MaterialPageRoute(
-            builder: (_) => OTPScreen(phone: phone),
+            builder: (_) => OTPScreen(phoneNumber: phone),
           );
         }
         return null;

@@ -1,167 +1,218 @@
 // lib/screens/otp_screen.dart
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../api/api_service.dart';
-import 'personal_info_screen.dart';
+import 'package:http/http.dart' as http;
+import '../constants/api.dart';
 
 class OTPScreen extends StatefulWidget {
-  final String phone;
-  const OTPScreen({super.key, required this.phone});
+  final String phoneNumber; // بنمرّر رقم الموبايل من PhoneScreen
+
+  const OTPScreen({
+    super.key,
+    required this.phoneNumber,
+  });
 
   @override
   State<OTPScreen> createState() => _OTPScreenState();
 }
 
 class _OTPScreenState extends State<OTPScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _codeCtrl = TextEditingController();
-  bool _loading = false;
+  final TextEditingController _codeController = TextEditingController();
+  bool _isVerifying = false;
+  bool _isResending = false;
 
-  // عدّاد إعادة الإرسال
   static const int _resendSeconds = 60;
-  int _left = _resendSeconds;
+  int _secondsLeft = _resendSeconds;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _startTimer();
+    _startResendTimer();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _codeCtrl.dispose();
+    _codeController.dispose();
     super.dispose();
   }
 
-  void _startTimer() {
+  void _startResendTimer() {
+    _secondsLeft = _resendSeconds;
     _timer?.cancel();
-    setState(() => _left = _resendSeconds);
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) return;
-      if (_left <= 1) {
-        t.cancel();
-        setState(() => _left = 0);
-      } else {
-        setState(() => _left -= 1);
-      }
+      setState(() {
+        _secondsLeft--;
+        if (_secondsLeft <= 0) {
+          t.cancel();
+        }
+      });
     });
   }
 
-  Future<void> _verify() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _verifyCode() async {
+    final code = _codeController.text.trim();
+    if (code.isEmpty) {
+      _showSnack('رجاءً أدخل رمز التحقق.');
+      return;
+    }
 
-    setState(() => _loading = true);
+    setState(() => _isVerifying = true);
     try {
-      // ✔️ أزلنا المتغيّر غير المستخدم (res)
-      await ApiService.verifyOtp(
-        phone: widget.phone,
-        code: _codeCtrl.text.trim(),
+      // ⚠️ إذا الباك إند بدو أسماء مفاتيح مختلفة غيّرها هون.
+      final res = await http.post(
+        Uri.parse(ApiConstants.checkOtp),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "phone": widget.phoneNumber,
+          "code": code,
+        }),
       );
 
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const PersonalInfoScreen()),
-      );
+      // نحاول نفك JSON (إن وجد) لنقرأ الرسالة
+      Map<String, dynamic>? data;
+      try {
+        data = jsonDecode(res.body) as Map<String, dynamic>?;
+      } catch (_) {
+        data = null;
+      }
+
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        _showSnack(data?['message']?.toString() ?? 'تم التحقق بنجاح ✅');
+        // بعد النجاح روح عالواجهة المناسبة (عدّل المسار حسب مشروعك)
+        if (!mounted) return;
+        Navigator.of(context).pushReplacementNamed('/personal-info');
+      } else {
+        final err = data?['message']?.toString() ??
+            'فشل التحقق. تأكد من الرمز وحاول مرة أخرى.';
+        _showSnack(err);
+      }
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString(), textDirection: TextDirection.rtl)),
-      );
+      _showSnack('مشكلة اتصال: ${e.toString()}');
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _isVerifying = false);
     }
   }
 
-  Future<void> _resend() async {
-    if (_left > 0) return;
-    setState(() => _loading = true);
+  Future<void> _resendCode() async {
+    if (_secondsLeft > 0) return;
+
+    setState(() => _isResending = true);
     try {
-      final r = await ApiService.sendOtp(phone: widget.phone);
-      // عرض devCode في بيئة التطوير إن وُجد
-      if (r.devCode != null && r.devCode!.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('devCode: ${r.devCode}',
-                  textDirection: TextDirection.rtl)),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content:
-                  Text('تم إرسال رمز جديد', textDirection: TextDirection.rtl)),
-        );
-      }
-      _startTimer();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString(), textDirection: TextDirection.rtl)),
+      final res = await http.post(
+        Uri.parse(ApiConstants.sendOtp),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({"phone": widget.phoneNumber}),
       );
+
+      Map<String, dynamic>? data;
+      try {
+        data = jsonDecode(res.body) as Map<String, dynamic>?;
+      } catch (_) {
+        data = null;
+      }
+
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        _showSnack(data?['message']?.toString() ?? 'تم إرسال رمز جديد.');
+        _startResendTimer();
+      } else {
+        final err = data?['message']?.toString() ??
+            'تعذّر إرسال الرمز الآن. حاول لاحقاً.';
+        _showSnack(err);
+      }
+    } catch (e) {
+      _showSnack('مشكلة اتصال: ${e.toString()}');
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _isResending = false);
     }
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(title: const Text('أدخل رمز التحقق')),
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Text('تم إرسال الرمز إلى: ${widget.phone}'),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _codeCtrl,
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  decoration: const InputDecoration(
-                    labelText: 'رمز مكوّن من 6 أرقام',
-                    border: OutlineInputBorder(),
-                    counterText: '',
-                  ),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'أدخل الرمز';
-                    if (!RegExp(r'^\d{4,8}$').hasMatch(v.trim()))
-                      return 'رمز غير صالح';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: _loading ? null : _verify,
-                    child: _loading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2.2),
-                          )
-                        : const Text('تأكيد'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: (_left == 0 && !_loading) ? _resend : null,
-                  child: Text(
-                    _left == 0
-                        ? 'إعادة إرسال الرمز'
-                        : 'يمكن إعادة الإرسال خلال $_left ثانية',
-                  ),
-                ),
-              ],
+    final canResend = _secondsLeft == 0 && !_isResending;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('التحقق من الرمز'),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'أدخل رمز التحقق المرسل إلى:',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-          ),
+            const SizedBox(height: 8),
+            Text(
+              widget.phoneNumber,
+              textAlign: TextAlign.center,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+
+            // حقل الرمز
+            TextField(
+              controller: _codeController,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              maxLength: 6, // عدّل إذا الرمز بطول مختلف
+              decoration: const InputDecoration(
+                hintText: 'أدخل الرمز',
+                counterText: '',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // زر التحقق
+            ElevatedButton(
+              onPressed: _isVerifying ? null : _verifyCode,
+              child: _isVerifying
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : const Text('تحقق'),
+            ),
+
+            const SizedBox(height: 12),
+
+            // إعادة إرسال
+            TextButton(
+              onPressed: canResend ? _resendCode : null,
+              child: _isResending
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(
+                      canResend
+                          ? 'إعادة إرسال الرمز'
+                          : 'يمكنك إعادة الإرسال بعد $_secondsLeft ثانية',
+                    ),
+            ),
+          ],
         ),
       ),
     );
