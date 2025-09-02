@@ -2,9 +2,9 @@
 class ApiConstants {
   static const String baseUrl = "https://abshir-api.justfortesting.ovh/api";
 
-  // إرسال رمز OTP
-  static const String sendOtp = "$baseUrl/auth/send-otp";
+  // إرسال OTP
+  static const String sendOtp = "$baseUrl/cwm";
 
-  // التحقق من رمز OTP
-  static const String checkOtp = "$baseUrl/cwm";
+  // التحقق من OTP
+  static const String verifyOtp = "$baseUrl/cwm";
 }
