@@ -1,6 +1,6 @@
 // lib/api/api_config.dart
 class ApiConfig {
-  /// بدّل القيمة حسب البيئة
+  // اختر البيئة
   static const bool useProd = true;
 
   static const String devBaseUrl = 'http://10.0.2.2:8000/api';
@@ -8,10 +8,9 @@ class ApiConfig {
 
   static String get baseUrl => useProd ? prodBaseUrl : devBaseUrl;
 
-  // المسارات الثابتة
-  static const String sendOtpPath = '/auth/send-otp';
+  // ⬅️ الإرسال والتحقق كلاهما على /cwm
+  static const String sendOtpPath = '/cwm';
   static const String verifyOtpPath = '/cwm';
 
-  // مهلة الطلبات
   static const Duration requestTimeout = Duration(seconds: 20);
 }

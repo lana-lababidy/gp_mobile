@@ -1,34 +1,21 @@
 // lib/api/api_service.dart
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'api_config.dart';
 
 class ApiService {
   /// إرسال الرمز / محاولة تسجيل الدخول
-  /// JSON body: { "mobile_number": "09XXXXXXXX" }
+  /// - يرسل mobile_number إلى /login-client
+  /// - إن رجع token من السيرفر نعتبره Login ناجح
   static Future<SendOtpResult> sendOtp({required String phone}) async {
     final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.sendOtpPath}');
-    final headers = {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    };
-    final body = jsonEncode({'mobile_number': phone});
-
-    if (kDebugMode) {
-      debugPrint('REQ URL  -> $url');
-      debugPrint('HEADERS  -> $headers');
-      debugPrint('BODY     -> $body');
-    }
-
     final res = await http
-        .post(url, headers: headers, body: body)
+        .post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'mobile_number': phone}),
+        )
         .timeout(ApiConfig.requestTimeout);
-
-    if (kDebugMode) {
-      debugPrint('STATUS   -> ${res.statusCode}');
-      debugPrint('RESP     -> ${res.body}');
-    }
 
     if (res.statusCode != 200) {
       throw Exception(_extractError(res.body) ?? 'فشل إرسال الطلب');
@@ -37,42 +24,28 @@ class ApiService {
     final data = _safeJson(res.body);
     return SendOtpResult(
       ok: true,
-      token: data['token']?.toString(), // إذا رجع توكن = لوجين فوري
+      token: data['token']?.toString(), // <-- مهم
       user: data['data'] is Map<String, dynamic>
           ? (data['data'] as Map<String, dynamic>)
           : null,
       message: data['message']?.toString(),
-      devCode: data['devCode']?.toString(), // ببيئة dev إذا متوفر
+      devCode: data['devCode']?.toString(), // لو موجود ببيئة dev
     );
   }
 
-  /// التحقق من الرمز
-  /// JSON body: { "mobile_number": "09XXXXXXXX", "code": "1234" }
+  /// التحقق من الرمز (نفعّلها لما يوصِل مسار التحقق النهائي)
   static Future<VerifyOtpResult> verifyOtp({
     required String phone,
     required String code,
   }) async {
     final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.verifyOtpPath}');
-    final headers = {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    };
-    final body = jsonEncode({'mobile_number': phone, 'code': code});
-
-    if (kDebugMode) {
-      debugPrint('REQ URL  -> $url');
-      debugPrint('HEADERS  -> $headers');
-      debugPrint('BODY     -> $body');
-    }
-
     final res = await http
-        .post(url, headers: headers, body: body)
+        .post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'mobile_number': phone, 'code': code}),
+        )
         .timeout(ApiConfig.requestTimeout);
-
-    if (kDebugMode) {
-      debugPrint('STATUS   -> ${res.statusCode}');
-      debugPrint('RESP     -> ${res.body}');
-    }
 
     if (res.statusCode != 200) {
       throw Exception(_extractError(res.body) ?? 'رمز غير صحيح أو منتهي');
@@ -106,7 +79,7 @@ class ApiService {
 
 class SendOtpResult {
   final bool ok;
-  final String? token; // إذا موجود: دخول فوري
+  final String? token; // <-- جديد
   final Map<String, dynamic>? user;
   final String? message;
   final String? devCode;
