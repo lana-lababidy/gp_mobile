@@ -40,7 +40,6 @@ class _OTPScreenState extends State<OTPScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تم التحقق بنجاح ✅')),
       );
-
       Navigator.pushReplacementNamed(context, '/personal-info');
     } catch (e) {
       if (!mounted) return;
@@ -54,38 +53,39 @@ class _OTPScreenState extends State<OTPScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('رمز التحقق')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              'أدخل رمز التحقق المرسل إلى ${widget.phoneNumber}',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: _otpCtrl,
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              decoration: const InputDecoration(
-                hintText: 'أدخل الرمز',
-                border: OutlineInputBorder(),
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('رمز التحقق')),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Text('أدخل رمز التحقق المرسل إلى ${widget.phoneNumber}',
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 24),
+              TextField(
+                controller: _otpCtrl,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                decoration: const InputDecoration(
+                  hintText: 'أدخل الرمز',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _verify,
-                child: _loading
-                    ? const CircularProgressIndicator()
-                    : const Text('تحقق'),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _verify,
+                  child: _loading
+                      ? const CircularProgressIndicator()
+                      : const Text('تحقق'),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
