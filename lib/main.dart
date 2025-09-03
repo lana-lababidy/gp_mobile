@@ -10,8 +10,8 @@ import 'screens/splash_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/cases_list_screen.dart';
 import 'screens/phone_screen.dart';
-import 'screens/otp_screen.dart'; // صف: OTPScreen (مع وسيط phone)
-import 'screens/personal_info_screen.dart'; // صف: PersonalInfoScreen
+import 'screens/otp_screen.dart';
+import 'screens/personal_info_screen.dart';
 
 // الحارس وحوار التأكيد
 import 'widgets/exit_guard.dart';
@@ -19,16 +19,11 @@ import 'widgets/exit_guard.dart';
 // ------- API (Dio) -------
 import 'api/dio_client.dart';
 import 'api/auth_api.dart';
+import 'api/api_config.dart'; // ✅ مصدر الإعدادات الوحيد
 
 void main() {
-  // ملاحظة: أثناء التطوير على محاكي أندرويد استخدم 10.0.2.2 بدل localhost.
-  // وعند النشر استخدم عنوان خادمكم HTTPS.
-  const String kBaseUrl = 'http://10.0.2.2:8000/api';
-  // مثال للإنتاج:
-  // const String kBaseUrl = 'https://abshir-api.justfortesting.ovh/api';
-
-  // نجهّز DioClient مرة وحدة للتطبيق كله
-  final dioClient = DioClient(baseUrl: kBaseUrl);
+  // ✅ استخدم نفس الـ baseUrl الموحّد من ApiConfig
+  final dioClient = DioClient(baseUrl: ApiConfig.baseUrl);
 
   runApp(
     MultiProvider(
@@ -77,7 +72,6 @@ class MyApp extends StatelessWidget {
         Locale('ar'),
         Locale('en'),
       ],
-      // (اختياري) ثبّت العربية كلغة افتراضية
       locale: const Locale('ar'),
 
       // لفّ كل الشاشات بحارس الخروج
@@ -85,20 +79,18 @@ class MyApp extends StatelessWidget {
         child: child ?? const SizedBox.shrink(),
       ),
 
-      // البداية: Splash (ومنها تنتقل لاحقًا للواجهات)
+      // البداية: Splash
       home: const SplashScreen(),
 
-      // مسارات التطبيق الثابتة (بدون باراميترات)
+      // مسارات ثابتة
       routes: {
-        '/home': (context) => const HomeScreen(), // الرئيسية
-        '/cases': (context) => const CasesListScreen(), // قائمة الحالات
-        '/phone': (context) => const PhoneScreen(), // شاشة الهاتف
-        '/personal-info': (context) =>
-            const PersonalInfoScreen(), // المعلومات الشخصية
-        // ملاحظة: لا نضع '/otp' هنا لأن OTPScreen تحتاج phone كوسيط
+        '/home': (context) => const HomeScreen(),
+        '/cases': (context) => const CasesListScreen(),
+        '/phone': (context) => const PhoneScreen(),
+        '/personal-info': (context) => const PersonalInfoScreen(),
       },
 
-      // مسارات مولّدة ديناميكيًا (لدعم '/otp' مع تمرير رقم الهاتف)
+      // مسار ديناميكي لتمرير رقم الهاتف إلى شاشة OTP
       onGenerateRoute: (settings) {
         if (settings.name == '/otp') {
           final phone = settings.arguments as String? ?? '';

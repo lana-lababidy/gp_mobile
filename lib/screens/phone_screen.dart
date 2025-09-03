@@ -31,6 +31,20 @@ class _PhoneScreenState extends State<PhoneScreen> {
     return v;
   }
 
+  void _showSnack(String msg) {
+    FocusScope.of(context).unfocus();
+    final m = ScaffoldMessenger.of(context)..clearSnackBars();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      m.showSnackBar(
+        SnackBar(
+          content: Text(msg, textDirection: TextDirection.rtl),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+      );
+    });
+  }
+
   Future<void> _send() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -40,15 +54,10 @@ class _PhoneScreenState extends State<PhoneScreen> {
     try {
       final res = await ApiService.sendOtp(phone: phone);
 
-      // لو السيرفر رجّع token مباشرة (مثل نتيجة لانا) → ندخل فورًا
+      // لو السيرفر رجّع token مباشرة → ندخل فورًا
+      if (!mounted) return;
       if (res.token != null && res.token!.isNotEmpty) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('تم تسجيل الدخول بنجاح',
-                  textDirection: TextDirection.rtl)),
-        );
-        // TODO: احفظ الـ token لو حابب (flutter_secure_storage)
+        _showSnack('تم تسجيل الدخول بنجاح');
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const PersonalInfoScreen()),
@@ -56,28 +65,17 @@ class _PhoneScreenState extends State<PhoneScreen> {
         return;
       }
 
-      // وإلا: تابع إلى شاشة OTP (بحال لاحقًا فعّلنا verify endpoint)
+      // وإلا: نتابع شاشة OTP (وفي dev ممكن يرجّع devCode)
       if (res.devCode != null && res.devCode!.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('devCode: ${res.devCode}',
-                  textDirection: TextDirection.rtl)),
-        );
+        _showSnack('devCode: ${res.devCode}');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content:
-                  Text('تم إرسال الرمز', textDirection: TextDirection.rtl)),
-        );
+        _showSnack('تم إرسال الرمز');
       }
 
-      if (!mounted) return;
       Navigator.pushNamed(context, '/otp', arguments: phone);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString(), textDirection: TextDirection.rtl)),
-      );
+      _showSnack(e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }

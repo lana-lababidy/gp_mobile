@@ -2,7 +2,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../api/api_service.dart';
-import 'personal_info_screen.dart'; // الوجهة القادمة بعد التحقق الناجح
+import 'personal_info_screen.dart';
 
 class OTPScreen extends StatefulWidget {
   final String phone;
@@ -17,7 +17,6 @@ class _OTPScreenState extends State<OTPScreen> {
   final _codeCtrl = TextEditingController();
   bool _loading = false;
 
-  // عدّاد لإعادة الإرسال
   static const int _resendSeconds = 60;
   int _left = _resendSeconds;
   Timer? _timer;
@@ -46,6 +45,20 @@ class _OTPScreenState extends State<OTPScreen> {
       } else {
         setState(() => _left -= 1);
       }
+    });
+  }
+
+  void _showSnack(String msg) {
+    FocusScope.of(context).unfocus();
+    final m = ScaffoldMessenger.of(context)..clearSnackBars();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      m.showSnackBar(
+        SnackBar(
+          content: Text(msg, textDirection: TextDirection.rtl),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+      );
     });
   }
 
@@ -85,12 +98,6 @@ class _OTPScreenState extends State<OTPScreen> {
     }
   }
 
-  void _showSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg, textDirection: TextDirection.rtl)),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -116,8 +123,9 @@ class _OTPScreenState extends State<OTPScreen> {
                   ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'أدخل الرمز';
-                    if (!RegExp(r'^\d{4,8}$').hasMatch(v.trim()))
+                    if (!RegExp(r'^\d{4,8}$').hasMatch(v.trim())) {
                       return 'رمز غير صالح';
+                    }
                     return null;
                   },
                 ),
