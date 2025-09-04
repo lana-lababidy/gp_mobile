@@ -12,20 +12,23 @@ class PhoneScreen extends StatefulWidget {
 
 class _PhoneScreenState extends State<PhoneScreen> {
   final _controller = TextEditingController();
-  bool _loading = false;
+  final _focus = FocusNode();
 
-  // للعرض فقط – ما منستخدمه بالإرسال (حتى ما نغيّر منطق الـ API)
-  String _countryCode = '+963';
+  bool _loading = false;
+  String? _errorText;
+
+  // للعرض فقط (ما بيتدخل بالإرسال)
+  static const String _countryCode = '+963';
 
   @override
   void dispose() {
     _controller.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
-  // فورماتر بسيط لعرض الرقم بشكل "999 999 999" أثناء الكتابة
+  // تنسيق "999 999 999"
   String _formatGrouped(String digits) {
-    // خُد أرقام فقط
     final only = digits.replaceAll(RegExp(r'\D'), '');
     final buf = StringBuffer();
     for (int i = 0; i < only.length; i++) {
@@ -35,39 +38,58 @@ class _PhoneScreenState extends State<PhoneScreen> {
     return buf.toString();
   }
 
-  Future<void> _send() async {
-    // حوّل الإدخال لأرقام فقط
-    var digits = _controller.text.replaceAll(RegExp(r'\D'), '');
-    // الـ API بدها الشكل المحلي مع صفر بالبداية (مثل 0968xxxxxx)
-    if (!digits.startsWith('0')) digits = '0$digits';
-
-    if (digits.length < 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('رجاءً أدخل رقم هاتف صحيح (10 أرقام)')),
-      );
-      return;
+  void _onChanged(String val) {
+    final formatted = _formatGrouped(val);
+    if (formatted != val) {
+      final pos = formatted.length;
+      _controller
+        ..text = formatted
+        ..selection = TextSelection.collapsed(offset: pos);
     }
+    _validate(showErrors: false);
+  }
 
-    setState(() => _loading = true);
+  bool _validate({bool showErrors = true}) {
+    final digits = _controller.text.replaceAll(RegExp(r'\D'), '');
+    String? err;
+    if (digits.isEmpty) {
+      err = 'رجاءً أدخل رقم الهاتف';
+    } else if (digits.length != 9) {
+      err = 'أدخل 9 أرقام مثل: 999 999 999';
+    }
+    if (showErrors) setState(() => _errorText = err);
+    return err == null;
+  }
+
+  Future<void> _send() async {
+    if (!_validate()) return;
+
+    // نحول الإدخال لأرقام ونضيف صفر بالبداية (مثل 0968xxxxxx)
+    final digits = _controller.text.replaceAll(RegExp(r'\D'), '');
+    final phoneToSend = '0$digits';
+
+    setState(() {
+      _loading = true;
+      _errorText = null;
+    });
+
     try {
-      // 1) توليد/إرسال كود OTP (لا تغيير على الـ API)
       final res =
-          await context.read<AuthApi>().generateOtpMobile(phone: digits);
+          await context.read<AuthApi>().generateOtpMobile(phone: phoneToSend);
 
-      // 2) التقاط كود التطوير إن رجع من السيرفر (data = 4 أرقام)
+      // التقاط كود التطوير إن وُجد (data = 4 أرقام)
       String? devOtp;
       final v = res['data'] ?? res['otp'] ?? res['code'];
       if (v != null) devOtp = v.toString();
 
       if (!mounted) return;
-
-      // 3) الانتقال لشاشة OTP وتمرير الرقم (والـ devOtp للتجربة فقط)
       Navigator.pushNamed(
         context,
         '/otp',
-        arguments: {'phone': digits, 'devOtp': devOtp},
+        arguments: {'phone': phoneToSend, 'devOtp': devOtp},
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
@@ -76,10 +98,62 @@ class _PhoneScreenState extends State<PhoneScreen> {
     }
   }
 
+  Widget _gradientButton(
+      {required String label, required VoidCallback? onTap}) {
+    const accent = Color(0xFF23A8F5);
+    const accent2 = Color(0xFF1B78EA);
+    return SizedBox(
+      height: 52,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(28),
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [accent, accent2],
+            ),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Color.fromRGBO(35, 168, 245, 0.25),
+                blurRadius: 16,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: InkWell(
+            onTap: _loading ? null : onTap,
+            borderRadius: BorderRadius.circular(28),
+            child: Center(
+              child: _loading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      label,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    const primary = Color(0xFF0A2A6C); // أزرق كحلي
-    const accent = Color(0xFF23A8F5); // أزرق فاتح للزر
+    const primary = Color(0xFF0A2A6C);
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -92,152 +166,134 @@ class _PhoneScreenState extends State<PhoneScreen> {
           title: const SizedBox.shrink(),
         ),
         body: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 12),
-                    // العنوان
-                    Text(
-                      'أهلاً بك',
-                      textAlign: TextAlign.center,
-                      style:
-                          Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                color: primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'أدخل رقم الموبايل للحصول على رمز تأكيد',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.black54,
-                          ),
-                    ),
-                    const SizedBox(height: 28),
+          child: LayoutBuilder(
+            builder: (context, c) => SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: c.maxHeight - 32),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 6),
 
-                    // عنوان الحقل
-                    Text(
-                      'رقم الهاتف',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: Colors.black87,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // سطر الإدخال: كود البلد (للعرض) + حقل الرقم
-                    Row(
-                      children: [
-                        // قائمة كود البلد (للشكل فقط)
-                        Container(
-                          height: 52,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                      // أيقونة قفل لطيفة
+                      Center(
+                        child: Container(
+                          width: 54,
+                          height: 54,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.black12),
-                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            color: Color.fromRGBO(10, 42, 108, 0.06),
                           ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _countryCode,
-                              icon:
-                                  const Icon(Icons.keyboard_arrow_down_rounded),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: '+963',
-                                  child: Text('🇸🇾  +963'),
+                          child: const Icon(Icons.lock_rounded,
+                              color: primary, size: 28),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // العنوان
+                      Text(
+                        'أهلاً بك',
+                        textAlign: TextAlign.center,
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: primary,
+                                  fontWeight: FontWeight.w800,
                                 ),
-                              ],
-                              onChanged: (v) {
-                                // للعرض فقط – ما منستخدمه بالإرسال
-                                if (v != null) setState(() => _countryCode = v);
-                              },
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'أدخل رقم الموبايل للحصول على رمز تأكيد',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.black54,
+                            ),
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      // عنوان الحقل
+                      Text(
+                        'رقم الهاتف',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // حقل برقم + بادئة كود البلد
+                      TextField(
+                        controller: _controller,
+                        focusNode: _focus,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
+                        autofillHints: const [AutofillHints.telephoneNumber],
+                        onChanged: _onChanged,
+                        onSubmitted: (_) => _send(),
+                        decoration: InputDecoration(
+                          hintText: 'مثال  999 999 999',
+                          prefixIconConstraints:
+                              const BoxConstraints(minWidth: 0, minHeight: 0),
+                          prefixIcon: Padding(
+                            padding: const EdgeInsetsDirectional.only(
+                                start: 12, end: 8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3F5F8),
+                                borderRadius: BorderRadius.circular(10),
+                                border:
+                                    Border.all(color: const Color(0xFFE6E8EC)),
+                              ),
+                              child: const Text('🇸🇾  $_countryCode',
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.w600)),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        // حقل الرقم
-                        Expanded(
-                          child: StatefulBuilder(
-                            builder: (context, setS) {
-                              return TextField(
-                                controller: _controller,
-                                keyboardType: TextInputType.number,
-                                textInputAction: TextInputAction.done,
-                                onChanged: (val) {
-                                  // حافظ على تنسيق "999 999 999"
-                                  final formatted = _formatGrouped(val);
-                                  if (formatted != val) {
-                                    final sel = formatted.length;
-                                    _controller
-                                      ..text = formatted
-                                      ..selection =
-                                          TextSelection.collapsed(offset: sel);
-                                  }
-                                },
-                                decoration: InputDecoration(
-                                  hintText: 'مثال  999 999 999',
-                                  filled: true,
-                                  fillColor: Colors.grey.withOpacity(0.06),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 14, vertical: 16),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                        color: Colors.transparent),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                        color: Colors.transparent),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide:
-                                        const BorderSide(color: Colors.black26),
-                                  ),
-                                ),
-                              );
-                            },
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFD),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 16),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                const BorderSide(color: Colors.transparent),
                           ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // زر الإرسال
-                    SizedBox(
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _loading ? null : _send,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: accent,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(28),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                const BorderSide(color: Colors.transparent),
                           ),
-                          elevation: 0,
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFCDD7E1)),
+                          ),
+                          errorText: _errorText,
                         ),
-                        child: _loading
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Text('إرسال رمز'),
                       ),
-                    ),
 
-                    const SizedBox(height: 12),
-                  ],
+                      const SizedBox(height: 6),
+                      Text(
+                        'سيتم إرسال رمز مؤلف من 4 خانات.',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: Colors.black45),
+                      ),
+
+                      const Spacer(),
+                      const SizedBox(height: 12),
+
+                      // زر Gradient
+                      _gradientButton(label: 'إرسال رمز', onTap: _send),
+
+                      const SizedBox(height: 12),
+                    ],
+                  ),
                 ),
               ),
             ),
