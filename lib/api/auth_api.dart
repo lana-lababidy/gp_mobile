@@ -55,7 +55,8 @@ class AuthApi {
     try {
       final res = await client.dio.post(
         '/generate-otp',
-        data: {'mobile_number': phone}, // مطابق لـ Postman
+        // نرسل الاسمين لزيادة التوافق مع السيرفر
+        data: {'mobile_number': phone, 'phone': phone},
       );
       return _asMap(res.data); // عادةً: { message, data: 4-digit code }
     } on DioException catch (e) {
@@ -71,7 +72,7 @@ class AuthApi {
     try {
       final res = await client.dio.post(
         '/cwm',
-        data: {'mobile_number': phone, 'otp': otp},
+        data: {'mobile_number': phone, 'phone': phone, 'otp': otp},
       );
       final data = _asMap(res.data);
 
@@ -90,7 +91,10 @@ class AuthApi {
     String? password,
   }) async {
     try {
-      final payload = <String, dynamic>{'mobile_number': phone};
+      final payload = <String, dynamic>{
+        'mobile_number': phone,
+        'phone': phone, // ✅ احتياطاً
+      };
       if (password != null && password.isNotEmpty) {
         payload['password'] = password;
       }
