@@ -8,7 +8,7 @@ import '../api/auth_api.dart';
 
 class OTPScreen extends StatefulWidget {
   final String phone;
-  final String? devOtp; // للاختبار فقط (يظهر خارج الإصدار Release)
+  final String? devOtp; // يظهر خارج الـ Release للاختبار
 
   const OTPScreen({super.key, required this.phone, this.devOtp});
 
@@ -35,9 +35,12 @@ class _OTPScreenState extends State<OTPScreen> {
     super.initState();
     _startCooldown();
 
-    // عبي الخانات في وضع التطوير إذا وصل devOtp
     if (!kReleaseMode && (widget.devOtp ?? '').isNotEmpty) {
       _setOtp(widget.devOtp!);
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_nodes.isNotEmpty) _nodes.first.requestFocus();
+      });
     }
   }
 
@@ -48,8 +51,6 @@ class _OTPScreenState extends State<OTPScreen> {
     for (final n in _nodes) n.dispose();
     super.dispose();
   }
-
-  // ---------------- Helpers ----------------
 
   void _startCooldown([int seconds = _cooldownDefault]) {
     _timer?.cancel();
@@ -75,33 +76,6 @@ class _OTPScreenState extends State<OTPScreen> {
 
   String _collectOtp() => _ctrls.map((c) => c.text).join();
 
-  void _onBoxChanged(int i, String v) {
-    // احتفظ بآخر رقم فقط
-    if (v.length > 1) {
-      _ctrls[i].text = v.substring(v.length - 1);
-    }
-    // انتقال تلقائي للخانة التالية
-    if (_ctrls[i].text.isNotEmpty && i < _otpLength - 1) {
-      _nodes[i + 1].requestFocus();
-    }
-    setState(() {});
-  }
-
-  // Backspace يرجع للخانة السابقة إذا الحالية فاضية
-  KeyEventResult _onBoxKey(int i, RawKeyEvent e) {
-    if (e is RawKeyDownEvent &&
-        e.logicalKey == LogicalKeyboardKey.backspace &&
-        _ctrls[i].text.isEmpty &&
-        i > 0) {
-      _nodes[i - 1].requestFocus();
-      _ctrls[i - 1].clear();
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  }
-
-  // ---------------- Actions ----------------
-
   Future<void> _verify() async {
     final otp = _collectOtp();
     if (otp.length != _otpLength || !RegExp(r'^\d{4}$').hasMatch(otp)) {
@@ -119,7 +93,6 @@ class _OTPScreenState extends State<OTPScreen> {
           );
 
       if (!mounted) return;
-      // نجاح → نفس التنقل المتّبع عندك
       Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
     } catch (e) {
       if (!mounted) return;
@@ -139,13 +112,11 @@ class _OTPScreenState extends State<OTPScreen> {
       final res =
           await context.read<AuthApi>().generateOtpMobile(phone: widget.phone);
 
-      // عبّي كود الاختبار خارج الـ Release إن رجع
       final v = (res['data'] ?? res['otp'] ?? res['code'])?.toString();
       if (!kReleaseMode && (v ?? '').isNotEmpty) {
         _setOtp(v!);
       }
 
-      // استعمل resend_after إن وُجد
       final s =
           (res['resend_after'] ?? res['data']?['resend_after'])?.toString();
       final seconds = int.tryParse(s ?? '') ?? _cooldownDefault;
@@ -166,7 +137,6 @@ class _OTPScreenState extends State<OTPScreen> {
     }
   }
 
-  // زر متدرّج بنفس شاشة الهاتف
   Widget _gradientButton(String label, VoidCallback? onTap) {
     const c1 = Color(0xFF2281F0);
     const c2 = Color(0xFF1C63E0);
@@ -219,66 +189,71 @@ class _OTPScreenState extends State<OTPScreen> {
     );
   }
 
-  // صندوق PIN واحد (تم نقل الظل إلى BoxDecoration ✅)
+  // صندوق PIN واحد (بدون RawKeyboardListener)
   Widget _pinBox(int i) {
     final bool filled = _ctrls[i].text.isNotEmpty;
 
-    return RawKeyboardListener(
-      focusNode: _nodes[i],
-      onKey: (e) => _onBoxKey(i, e),
-      child: SizedBox(
-        width: 62,
-        height: 62,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: const [
-              BoxShadow(
-                color: Color.fromRGBO(16, 24, 40, 0.06),
-                blurRadius: 12,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          child: TextField(
-            controller: _ctrls[i],
-            focusNode: _nodes[i],
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
-            textInputAction: i == _otpLength - 1
-                ? TextInputAction.done
-                : TextInputAction.next,
-            maxLength: 1,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-            decoration: InputDecoration(
-              counterText: '',
-              hintText: '•',
-              hintStyle: TextStyle(
-                color: Colors.black26,
-                fontSize: filled ? 0 : 22,
-                fontWeight: FontWeight.w700,
-              ),
-              contentPadding: EdgeInsets.zero,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: Colors.transparent),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: Colors.transparent),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: Color(0xFFE0E6F2)),
-              ),
+    return SizedBox(
+      width: 62,
+      height: 62,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: const [
+            BoxShadow(
+              color: Color.fromRGBO(16, 24, 40, 0.06),
+              blurRadius: 12,
+              offset: Offset(0, 6),
             ),
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            onChanged: (v) => _onBoxChanged(i, v),
-            onSubmitted: (_) {
-              if (i == _otpLength - 1) _verify();
-            },
+          ],
+        ),
+        child: TextField(
+          controller: _ctrls[i],
+          focusNode: _nodes[i],
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.number,
+          textInputAction:
+              i == _otpLength - 1 ? TextInputAction.done : TextInputAction.next,
+          maxLength: 1,
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+          decoration: InputDecoration(
+            counterText: '',
+            hintText: '•',
+            hintStyle: TextStyle(
+              color: Colors.black26,
+              fontSize: filled ? 0 : 22,
+              fontWeight: FontWeight.w700,
+            ),
+            contentPadding: EdgeInsets.zero,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.transparent),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.transparent),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Color(0xFFE0E6F2)),
+            ),
           ),
+          // ✅ شلنا const هون
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          onChanged: (v) {
+            if (v.isNotEmpty && i < _otpLength - 1) {
+              _nodes[i + 1].requestFocus();
+            }
+            if (v.isEmpty && i > 0) {
+              _nodes[i - 1].requestFocus();
+              _ctrls[i - 1].clear();
+            }
+            setState(() {});
+          },
+          onSubmitted: (_) {
+            if (i == _otpLength - 1) _verify();
+          },
         ),
       ),
     );
@@ -300,7 +275,6 @@ class _OTPScreenState extends State<OTPScreen> {
         backgroundColor: Colors.transparent,
         body: Stack(
           children: [
-            // خلفية مطابقة لشاشة الهاتف
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -318,8 +292,6 @@ class _OTPScreenState extends State<OTPScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 28),
-
-                    // عنوان ووصف
                     Text(
                       'أدخل رمز التحقق',
                       textAlign: TextAlign.center,
@@ -338,18 +310,12 @@ class _OTPScreenState extends State<OTPScreen> {
                             height: 1.4,
                           ),
                     ),
-
                     const SizedBox(height: 28),
-
-                    // صناديق PIN
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: List.generate(_otpLength, (i) => _pinBox(i)),
                     ),
-
                     const SizedBox(height: 18),
-
-                    // إعادة الإرسال
                     Center(
                       child: _secondsLeft > 0
                           ? Text(
@@ -371,22 +337,15 @@ class _OTPScreenState extends State<OTPScreen> {
                                   : const Text('إعادة إرسال الرمز'),
                             ),
                     ),
-
                     const SizedBox(height: 22),
-
-                    // زر تأكيد
                     _gradientButton('تأكيد', _verify),
-
                     const SizedBox(height: 14),
-
-                    // تغيير الرقم
                     Center(
                       child: TextButton(
                         onPressed: () => Navigator.pop(context),
                         child: const Text('تغيير الرقم'),
                       ),
                     ),
-
                     const SizedBox(height: 24),
                   ],
                 ),
