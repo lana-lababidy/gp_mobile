@@ -17,7 +17,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
   bool _loading = false;
   String? _errorText;
 
-  // للعرض فقط – ما بيتدخل بالإرسال
+  // للعرض فقط – لا نستخدمه في الإرسال
   static const String _countryCode = '+963';
 
   @override
@@ -64,7 +64,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
   Future<void> _send() async {
     if (!_validate()) return;
 
-    // نحول الإدخال لأرقام ونضيف صفر بالبداية (مثل 0968xxxxxx)
+    // نرسل للـ API بصيغة محلية تبدأ بصفر (بدون أي تعديل على منطقك)
     final digits = _controller.text.replaceAll(RegExp(r'\D'), '');
     final phoneToSend = '0$digits';
 
@@ -98,34 +98,36 @@ class _PhoneScreenState extends State<PhoneScreen> {
     }
   }
 
-  Widget _gradientButton(
-      {required String label, required VoidCallback? onTap}) {
-    const accent = Color(0xFF23A8F5);
-    const accent2 = Color(0xFF1B78EA);
+  Widget _primaryGradientButton({
+    required String label,
+    required VoidCallback? onTap,
+  }) {
+    const c1 = Color(0xFF2FA7F6);
+    const c2 = Color(0xFF1D7BEA);
     return SizedBox(
       height: 52,
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(26),
         child: Ink(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: [accent, accent2],
+              colors: [c1, c2],
             ),
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(26),
             boxShadow: const [
               BoxShadow(
-                color: Color.fromRGBO(35, 168, 245, 0.25),
+                color: Color.fromRGBO(33, 122, 234, 0.25),
                 blurRadius: 16,
                 offset: Offset(0, 8),
               ),
             ],
           ),
           child: InkWell(
+            borderRadius: BorderRadius.circular(26),
             onTap: _loading ? null : onTap,
-            borderRadius: BorderRadius.circular(28),
             child: Center(
               child: _loading
                   ? const SizedBox(
@@ -140,8 +142,8 @@ class _PhoneScreenState extends State<PhoneScreen> {
                       label,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w700,
                         fontSize: 16,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
             ),
@@ -167,16 +169,41 @@ class _PhoneScreenState extends State<PhoneScreen> {
         ),
         body: Stack(
           children: [
-            // 🔵 خلفية أزرق خفيف (Gradient لطيف)
+            // خلفية تدرّج أزرق لطيف
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFFEFF6FF), // أزرق فاتح جداً
+                    Color(0xFFE9F2FF), // أزرق فاتح
                     Color(0xFFF7FAFF), // أبيض مزرق
                   ],
+                ),
+              ),
+            ),
+            // لمسات زخرفية خفيفة
+            Positioned(
+              top: -40,
+              left: -30,
+              child: Container(
+                width: 180,
+                height: 180,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF1D7BEA).withOpacity(0.06),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -60,
+              right: -40,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF2FA7F6).withOpacity(0.06),
                 ),
               ),
             ),
@@ -184,25 +211,27 @@ class _PhoneScreenState extends State<PhoneScreen> {
             SafeArea(
               child: LayoutBuilder(
                 builder: (context, c) => SingleChildScrollView(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 22,
+                    vertical: 18,
+                  ),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: c.maxHeight - 32),
+                    constraints: BoxConstraints(minHeight: c.maxHeight - 36),
                     child: IntrinsicHeight(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
 
-                          // 👋 إشارة ترحيب بدل القفل
+                          // أيقونة ترحيب 👋
                           Center(
                             child: Container(
-                              width: 54,
-                              height: 54,
+                              width: 56,
+                              height: 56,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color:
-                                    const Color(0xFF0A2A6C).withOpacity(0.06),
+                                    const Color(0xFF0A2A6C).withOpacity(0.07),
                               ),
                               child: const Center(
                                 child:
@@ -234,9 +263,8 @@ class _PhoneScreenState extends State<PhoneScreen> {
                                 ?.copyWith(color: Colors.black54),
                           ),
 
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 26),
 
-                          // عنوان الحقل
                           Text(
                             'رقم الهاتف',
                             style: Theme.of(context)
@@ -249,80 +277,115 @@ class _PhoneScreenState extends State<PhoneScreen> {
                           ),
                           const SizedBox(height: 8),
 
-                          // ✅ الحقل LTR ليمنع الكتابة بالمقلوب
-                          Directionality(
-                            textDirection: TextDirection.ltr,
-                            child: TextField(
-                              controller: _controller,
-                              focusNode: _focus,
-                              keyboardType: TextInputType.number,
-                              textInputAction: TextInputAction.done,
-                              textAlign: TextAlign.left,
-                              autofillHints: const [
-                                AutofillHints.telephoneNumber
+                          // بطاقة زجاجية للحقل
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.65),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                  color: Colors.white.withOpacity(0.9)),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color.fromRGBO(10, 42, 108, 0.06),
+                                  blurRadius: 18,
+                                  offset: Offset(0, 8),
+                                ),
                               ],
-                              onChanged: _onChanged,
-                              onSubmitted: (_) => _send(),
-                              decoration: InputDecoration(
-                                hintText: '999 999 999',
-                                prefixIconConstraints: const BoxConstraints(
-                                    minWidth: 0, minHeight: 0),
-                                // شارة كود البلد تبقى بداية الحقل (يسار بوضع LTR)
-                                prefixIcon: Padding(
-                                  padding: const EdgeInsetsDirectional.only(
-                                      start: 12, end: 8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF3F5F8),
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(
-                                          color: const Color(0xFFE6E8EC)),
-                                    ),
-                                    child: const Text('🇸🇾  $_countryCode',
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                            child: Row(
+                              textDirection:
+                                  TextDirection.rtl, // نخلي الشارة يمين
+                              children: [
+                                // شارة العلم + الكود (يمين)
+                                Container(
+                                  height: 42,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    color: const Color(0xFFF1F4F8),
+                                    border: Border.all(
+                                        color: const Color(0xFFE6E8EC)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // 🔰 علم سوريا الأخضر (Asset معFallback)
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(3),
+                                        child: Image.asset(
+                                          'assets/flags/syria_green.png',
+                                          width: 20,
+                                          height: 14,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              Container(
+                                            width: 20,
+                                            height: 14,
+                                            color:
+                                                const Color(0xFF25A35A), // أخضر
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      const Text(
+                                        _countryCode,
                                         style: TextStyle(
-                                            fontWeight: FontWeight.w600)),
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFD),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 16),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: Colors.transparent),
+                                const SizedBox(width: 8),
+
+                                // الحقل نفسه LTR لمنع قلب الأرقام
+                                Expanded(
+                                  child: Directionality(
+                                    textDirection: TextDirection.ltr,
+                                    child: TextField(
+                                      controller: _controller,
+                                      focusNode: _focus,
+                                      keyboardType: TextInputType.number,
+                                      textInputAction: TextInputAction.done,
+                                      textAlign: TextAlign.left,
+                                      autofillHints: const [
+                                        AutofillHints.telephoneNumber
+                                      ],
+                                      onChanged: _onChanged,
+                                      onSubmitted: (_) => _send(),
+                                      decoration: const InputDecoration(
+                                        hintText: '968 879 073',
+                                        border: InputBorder.none,
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: Colors.transparent),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: Color(0xFFCDD7E1)),
-                                ),
-                                errorText: _errorText,
-                              ),
+                              ],
                             ),
                           ),
 
                           const SizedBox(height: 6),
                           Text(
-                            'سيتم إرسال رمز مؤلف من 4 خانات.',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(color: Colors.black45),
+                            _errorText ?? 'سيتم إرسال رمز مؤلف من 4 خانات.',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: _errorText == null
+                                          ? Colors.black45
+                                          : const Color(0xFFD32F2F),
+                                    ),
+                            textAlign: TextAlign.start,
                           ),
 
                           const Spacer(),
                           const SizedBox(height: 12),
 
-                          // زر Gradient
-                          _gradientButton(label: 'إرسال رمز', onTap: _send),
+                          _primaryGradientButton(
+                            label: 'إرسال رمز',
+                            onTap: _send,
+                          ),
 
                           const SizedBox(height: 12),
                         ],
