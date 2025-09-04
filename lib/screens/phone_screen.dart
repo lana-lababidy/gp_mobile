@@ -1,4 +1,3 @@
-// lib/screens/phone_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../api/auth_api.dart';
@@ -31,16 +30,13 @@ class _PhoneScreenState extends State<PhoneScreen> {
 
     setState(() => _loading = true);
     try {
-      // ✅ نفس اللي اشتغل ببوستمان
-      final data = await context.read<AuthApi>().loginClient(phone: raw);
+      // 1) توليد/إرسال كود OTP عبر الباك
+      await context.read<AuthApi>().generateOtpMobile(phone: raw);
 
-      // بس للعرض
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تم: ${data['message'] ?? 'نجاح العملية'}')),
-      );
+      if (!mounted) return;
 
-      // TODO: إذا بدك تنقل لواجهة ثانية بعد النجاح:
-      // Navigator.pushNamed(context, '/otp', arguments: {'phone': raw});
+      // 2) الانتقال لواجهة إدخال OTP وتمرير الرقم
+      Navigator.pushNamed(context, '/otp', arguments: {'phone': raw});
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
@@ -87,7 +83,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'سيتم إرسال الطلب بنفس إعدادات Postman (mobile_number كـ JSON).',
+                'سيتم إرسال رمز التحقق إلى رقمك، ثم الانتقال لواجهة OTP.',
                 style: theme.textTheme.bodySmall,
                 textAlign: TextAlign.center,
               ),

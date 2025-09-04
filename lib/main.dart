@@ -1,4 +1,3 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -16,28 +15,23 @@ import 'screens/personal_info_screen.dart';
 // الحارس
 import 'widgets/exit_guard.dart';
 
-// API (Dio)
+// API
 import 'api/dio_client.dart';
 import 'api/auth_api.dart';
 
 void main() {
-  // ملاحظة: إذا بدك تختبر محلي على محاكي أندرويد استخدم 10.0.2.2
+  // للمطابقة مع Postman:
+  const String kBaseUrl = 'https://abshir-api.justfortesting.ovh/api';
+  // للمحاكي المحلي (عند الحاجة):
   // const String kBaseUrl = 'http://10.0.2.2:8000/api';
 
-  // لتطابق Postman (الموصى به حالياً):
-  const String kBaseUrl = 'https://abshir-api.justfortesting.ovh/api';
-
-  // نجهّز DioClient مرة واحدة
   final dioClient = DioClient(baseUrl: kBaseUrl);
 
   runApp(
     MultiProvider(
       providers: [
-        // مزوّدات الـ API
         Provider<DioClient>.value(value: dioClient),
         Provider<AuthApi>(create: (_) => AuthApi(dioClient)),
-
-        // مزوّدات الحالة
         ChangeNotifierProvider(create: (_) => CasesController()),
       ],
       child: const MyApp(),
@@ -52,8 +46,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-
-      // الثيم
       theme: ThemeData(
         useMaterial3: true,
         fontFamily: 'Cetrl',
@@ -66,8 +58,6 @@ class MyApp extends StatelessWidget {
         colorSchemeSeed: const Color(0xFF0A2A6C),
         brightness: Brightness.dark,
       ),
-
-      // اللغة والـ RTL
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -75,24 +65,15 @@ class MyApp extends StatelessWidget {
       ],
       supportedLocales: const [Locale('ar'), Locale('en')],
       locale: const Locale('ar'),
-
-      // حارس الخروج
-      builder: (context, child) => ExitGuard(
-        child: child ?? const SizedBox.shrink(),
-      ),
-
-      // البداية
+      builder: (context, child) =>
+          ExitGuard(child: child ?? const SizedBox.shrink()),
       home: const SplashScreen(),
-
-      // مسارات ثابتة
       routes: {
         '/home': (_) => const HomeScreen(),
         '/cases': (_) => const CasesListScreen(),
         '/phone': (_) => const PhoneScreen(),
         '/personal-info': (_) => const PersonalInfoScreen(),
       },
-
-      // مسار OTP مع تمرير رقم الهاتف
       onGenerateRoute: (settings) {
         if (settings.name == '/otp') {
           String phone = '';
@@ -102,9 +83,7 @@ class MyApp extends StatelessWidget {
           } else if (args is Map) {
             phone = args['phone']?.toString() ?? '';
           }
-          return MaterialPageRoute(
-            builder: (_) => OTPScreen(phone: phone),
-          );
+          return MaterialPageRoute(builder: (_) => OTPScreen(phone: phone));
         }
         return null;
       },
