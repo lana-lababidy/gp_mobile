@@ -96,23 +96,24 @@ class _HomeScreenState extends State<HomeScreen> {
           unselectedItemColor: Colors.grey.shade600,
           backgroundColor: Colors.white,
           onTap: (i) {
-            setState(() => _currentIndex = i);
+            // ترتيب العناصر: الرئيسية(0) - الحالات(1) - إضافة(2) - الإعدادات(3)
             if (i == 0) {
-              // الرئيسية
+              setState(() => _currentIndex = i);
             } else if (i == 1) {
+              setState(() => _currentIndex = i);
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const CasesListScreen()),
               );
             } else if (i == 2) {
+              setState(() => _currentIndex = i);
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const AddCaseScreen()),
               );
             } else if (i == 3) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('الإعدادات قادمة قريبًا')),
-              );
+              // فتح شاشة الإعدادات عبر الراوت المعرّف في main.dart
+              Navigator.pushNamed(context, '/settings');
             }
           },
           items: const [
