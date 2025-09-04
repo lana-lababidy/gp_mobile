@@ -1,152 +1,220 @@
 // lib/screens/otp_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../api/api_service.dart';
-import 'personal_info_screen.dart'; // الوجهة القادمة بعد التحقق الناجح
+import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:provider/provider.dart';
+import '../api/auth_api.dart';
 
 class OTPScreen extends StatefulWidget {
   final String phone;
-  const OTPScreen({super.key, required this.phone});
+  final String? devOtp; // يُمرَّر من شاشة الهاتف (Debug فقط)
+  const OTPScreen({super.key, required this.phone, this.devOtp});
 
   @override
   State<OTPScreen> createState() => _OTPScreenState();
 }
 
 class _OTPScreenState extends State<OTPScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _codeCtrl = TextEditingController();
-  bool _loading = false;
+  final _otpCtrl = TextEditingController();
 
-  // عدّاد لإعادة الإرسال
-  static const int _resendSeconds = 60;
-  int _left = _resendSeconds;
+  static const int _otpLength = 4; // السيرفر يرجّع 4 خانات
+  bool _loading = false;
+  bool _resending = false;
+
+  static const int _cooldownDefault = 60;
+  int _secondsLeft = _cooldownDefault;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _startTimer();
+    _startCooldown();
+
+    if (!kReleaseMode && (widget.devOtp ?? '').isNotEmpty) {
+      _otpCtrl.text = widget.devOtp!;
+    }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _codeCtrl.dispose();
+    _otpCtrl.dispose();
     super.dispose();
   }
 
-  void _startTimer() {
+  void _startCooldown([int seconds = _cooldownDefault]) {
     _timer?.cancel();
-    setState(() => _left = _resendSeconds);
+    setState(() => _secondsLeft = seconds);
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) return;
-      if (_left <= 1) {
+      if (_secondsLeft <= 1) {
         t.cancel();
-        setState(() => _left = 0);
+        if (mounted) setState(() {});
       } else {
-        setState(() => _left -= 1);
+        if (mounted) setState(() => _secondsLeft--);
       }
     });
   }
 
   Future<void> _verify() async {
-    if (!_formKey.currentState!.validate()) return;
+    final otp = _otpCtrl.text.trim();
+    if (otp.length != _otpLength || !RegExp(r'^\d+$').hasMatch(otp)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('أدخل رمز مكوّن من $_otpLength أرقام')),
+      );
+      return;
+    }
 
     setState(() => _loading = true);
     try {
-      await ApiService.verifyOtp(
-        phone: widget.phone,
-        code: _codeCtrl.text.trim(),
-      );
+      final res = await context.read<AuthApi>().continueWithMobile(
+            phone: widget.phone,
+            otp: otp,
+          );
 
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const PersonalInfoScreen()),
-      );
+
+      // ✅ بدون أي فحص نوع على res
+      Map<String, dynamic>? data;
+      final raw = res['data'];
+      if (raw is Map) {
+        data = Map<String, dynamic>.from(raw);
+      }
+      final name = data?['username']?.toString();
+      if (name != null && name.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('أهلًا $name!')),
+        );
+      }
+
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
     } catch (e) {
-      _showSnack(e.toString());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _resend() async {
-    if (_left > 0) return;
-    try {
-      setState(() => _loading = true);
-      await ApiService.sendOtp(phone: widget.phone);
-      _showSnack('تم إرسال رمز جديد');
-      _startTimer();
-    } catch (e) {
-      _showSnack(e.toString());
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
+    if (_secondsLeft > 0) return;
 
-  void _showSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg, textDirection: TextDirection.rtl)),
-    );
+    setState(() => _resending = true);
+    try {
+      final res =
+          await context.read<AuthApi>().generateOtpMobile(phone: widget.phone);
+
+      // كود التطوير (إن وُجد)
+      final v = res['data'] ?? res['otp'] ?? res['code'];
+      final dev = v?.toString();
+      if (!kReleaseMode && (dev ?? '').isNotEmpty) {
+        _otpCtrl.text = dev!;
+      }
+
+      // عدّاد الانتظار (resend_after إن وُجد)
+      final s =
+          (res['resend_after'] ?? res['data']?['resend_after'])?.toString();
+      final seconds = int.tryParse(s ?? '') ?? _cooldownDefault;
+      _startCooldown(seconds);
+
+      if (!mounted) return;
+      final message = res['message']?.toString() ?? 'تم إرسال رمز جديد';
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _resending = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final showDevOtp = !kReleaseMode && (widget.devOtp ?? '').isNotEmpty;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(title: const Text('أدخل رمز التحقق')),
+        appBar: AppBar(
+          title: const Text('أدخل رمز التحقق'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
+            tooltip: 'رجوع',
+          ),
+        ),
         body: Padding(
           padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Text('تم إرسال الرمز إلى: ${widget.phone}'),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _codeCtrl,
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  decoration: const InputDecoration(
-                    labelText: 'رمز مكوّن من 6 أرقام',
-                    border: OutlineInputBorder(),
-                    counterText: '',
-                  ),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'أدخل الرمز';
-                    if (!RegExp(r'^\d{4,8}$').hasMatch(v.trim()))
-                      return 'رمز غير صالح';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: _loading ? null : _verify,
-                    child: _loading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2.2),
-                          )
-                        : const Text('تأكيد'),
-                  ),
-                ),
+          child: Column(
+            children: [
+              Text(
+                'أرسلنا رمز التحقق إلى:\n${widget.phone}',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium,
+              ),
+              if (showDevOtp) ...[
                 const SizedBox(height: 8),
-                TextButton(
-                  onPressed: (_left == 0 && !_loading) ? _resend : null,
-                  child: Text(
-                    _left == 0
-                        ? 'إعادة إرسال الرمز'
-                        : 'يمكن إعادة الإرسال خلال $_left ثانية',
-                  ),
-                )
+                Text(
+                  'رمز الاختبار (Debug): ${widget.devOtp}',
+                  style:
+                      theme.textTheme.bodySmall?.copyWith(color: Colors.green),
+                ),
               ],
-            ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: _otpCtrl,
+                textAlign: TextAlign.center,
+                keyboardType: TextInputType.number,
+                autofocus: true,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(_otpLength),
+                ],
+                decoration: const InputDecoration(
+                  labelText: 'رمز التحقق',
+                  hintText: '____',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 48,
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _verify,
+                  child: _loading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('تأكيد'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _secondsLeft > 0
+                    ? 'يمكنك إعادة الإرسال بعد $_secondsLeft ثانية'
+                    : 'لم يصلك الرمز؟',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: (_secondsLeft > 0 || _resending) ? null : _resend,
+                icon: _resending
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh),
+                label: const Text('إعادة إرسال الرمز'),
+              ),
+            ],
           ),
         ),
       ),
