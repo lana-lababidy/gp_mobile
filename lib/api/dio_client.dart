@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class DioClient {
   late final Dio dio;
 
-  // ✅ صار عندو مُعامل baseUrl متل ما عم تناديه بـ main.dart
+  // ⬅️ استدعِه من main.dart بهالشكل: DioClient(baseUrl: kBaseUrl)
   DioClient({required String baseUrl}) {
     dio = Dio(
       BaseOptions(
@@ -19,7 +19,7 @@ class DioClient {
       ),
     );
 
-    // هيدر التوكن تلقائياً + ضمان Accept/Content-Type
+    // حقن التوكن تلقائياً + ضمان الهيدرز
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
@@ -37,7 +37,7 @@ class DioClient {
       ),
     );
 
-    // لوج مفيد أثناء التطوير
+    // لوج للديبغ (يفيد جداً إذا ردّ السيرفر خطأ)
     dio.interceptors.add(
       LogInterceptor(
         request: true,

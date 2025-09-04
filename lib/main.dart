@@ -10,24 +10,24 @@ import 'screens/splash_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/cases_list_screen.dart';
 import 'screens/phone_screen.dart';
-import 'screens/otp_screen.dart'; // صف: OTPScreen (مع وسيط phone)
-import 'screens/personal_info_screen.dart'; // صف: PersonalInfoScreen
+import 'screens/otp_screen.dart';
+import 'screens/personal_info_screen.dart';
 
-// الحارس وحوار التأكيد
+// الحارس
 import 'widgets/exit_guard.dart';
 
-// ------- API (Dio) -------
+// API (Dio)
 import 'api/dio_client.dart';
 import 'api/auth_api.dart';
 
 void main() {
-  // ملاحظة: أثناء التطوير على محاكي أندرويد استخدم 10.0.2.2 بدل localhost.
-  // وعند النشر استخدم عنوان خادمكم HTTPS.
-  const String kBaseUrl = 'http://10.0.2.2:8000/api';
-  // مثال للإنتاج:
-  // const String kBaseUrl = 'https://abshir-api.justfortesting.ovh/api';
+  // ملاحظة: إذا بدك تختبر محلي على محاكي أندرويد استخدم 10.0.2.2
+  // const String kBaseUrl = 'http://10.0.2.2:8000/api';
 
-  // نجهّز DioClient مرة وحدة للتطبيق كله
+  // لتطابق Postman (الموصى به حالياً):
+  const String kBaseUrl = 'https://abshir-api.justfortesting.ovh/api';
+
+  // نجهّز DioClient مرة واحدة
   final dioClient = DioClient(baseUrl: kBaseUrl);
 
   runApp(
@@ -37,7 +37,7 @@ void main() {
         Provider<DioClient>.value(value: dioClient),
         Provider<AuthApi>(create: (_) => AuthApi(dioClient)),
 
-        // مزوّداتك الحالية
+        // مزوّدات الحالة
         ChangeNotifierProvider(create: (_) => CasesController()),
       ],
       child: const MyApp(),
@@ -53,7 +53,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
 
-      // الثيم العام (فاتح + داكن)
+      // الثيم
       theme: ThemeData(
         useMaterial3: true,
         fontFamily: 'Cetrl',
@@ -67,41 +67,41 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.dark,
       ),
 
-      // دعم العربية وواجهة RTL
+      // اللغة والـ RTL
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('ar'),
-        Locale('en'),
-      ],
-      // (اختياري) ثبّت العربية كلغة افتراضية
+      supportedLocales: const [Locale('ar'), Locale('en')],
       locale: const Locale('ar'),
 
-      // لفّ كل الشاشات بحارس الخروج
+      // حارس الخروج
       builder: (context, child) => ExitGuard(
         child: child ?? const SizedBox.shrink(),
       ),
 
-      // البداية: Splash (ومنها تنتقل لاحقًا للواجهات)
+      // البداية
       home: const SplashScreen(),
 
-      // مسارات التطبيق الثابتة (بدون باراميترات)
+      // مسارات ثابتة
       routes: {
-        '/home': (context) => const HomeScreen(), // الرئيسية
-        '/cases': (context) => const CasesListScreen(), // قائمة الحالات
-        '/phone': (context) => const PhoneScreen(), // شاشة الهاتف
-        '/personal-info': (context) =>
-            const PersonalInfoScreen(), // المعلومات الشخصية
-        // ملاحظة: لا نضع '/otp' هنا لأن OTPScreen تحتاج phone كوسيط
+        '/home': (_) => const HomeScreen(),
+        '/cases': (_) => const CasesListScreen(),
+        '/phone': (_) => const PhoneScreen(),
+        '/personal-info': (_) => const PersonalInfoScreen(),
       },
 
-      // مسارات مولّدة ديناميكيًا (لدعم '/otp' مع تمرير رقم الهاتف)
+      // مسار OTP مع تمرير رقم الهاتف
       onGenerateRoute: (settings) {
         if (settings.name == '/otp') {
-          final phone = settings.arguments as String? ?? '';
+          String phone = '';
+          final args = settings.arguments;
+          if (args is String) {
+            phone = args;
+          } else if (args is Map) {
+            phone = args['phone']?.toString() ?? '';
+          }
           return MaterialPageRoute(
             builder: (_) => OTPScreen(phone: phone),
           );
