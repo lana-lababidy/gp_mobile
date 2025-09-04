@@ -12,9 +12,9 @@ import 'screens/cases_list_screen.dart';
 import 'screens/phone_screen.dart';
 import 'screens/otp_screen.dart';
 import 'screens/personal_info_screen.dart';
-import 'screens/settings_screen.dart'; // ⬅️ جديد
+import 'screens/settings_screen.dart';
 
-// الحارس (إن وجد)
+// الحارس
 import 'widgets/exit_guard.dart';
 
 // API/Dio
@@ -22,10 +22,10 @@ import 'api/dio_client.dart';
 import 'api/auth_api.dart';
 
 void main() {
-  // أثناء التطوير على محاكي أندرويد:
-  const String kBaseUrl = 'http://10.0.2.2:8000/api';
-  // مثال للإنتاج:
-  // const String kBaseUrl = 'https://abshir-api.justfortesting.ovh/api';
+  // استخدم نفس السيرفر الذي اختبرته على Postman
+  const String kBaseUrl = 'https://abshir-api.justfortesting.ovh/api';
+  // لو بدك خادم محلي لاحقاً:
+  // const String kBaseUrl = 'http://10.0.2.2:8000/api';
 
   final dioClient = DioClient(baseUrl: kBaseUrl);
 
@@ -48,8 +48,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-
-      // ثيم
       theme: ThemeData(
         useMaterial3: true,
         fontFamily: 'Cetrl',
@@ -62,8 +60,6 @@ class MyApp extends StatelessWidget {
         colorSchemeSeed: const Color(0xFF0A2A6C),
         brightness: Brightness.dark,
       ),
-
-      // العربية
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -71,24 +67,16 @@ class MyApp extends StatelessWidget {
       ],
       supportedLocales: const [Locale('ar'), Locale('en')],
       locale: const Locale('ar'),
-
-      // لفّ الشاشات بحارس الخروج إن رغبت
       builder: (context, child) =>
           ExitGuard(child: child ?? const SizedBox.shrink()),
-
-      // شاشة البداية
       home: const SplashScreen(),
-
-      // مسارات ثابتة
       routes: {
         '/home': (context) => const HomeScreen(),
         '/cases': (context) => const CasesListScreen(),
         '/phone': (context) => const PhoneScreen(),
         '/personal-info': (context) => const PersonalInfoScreen(),
-        '/settings': (context) => const SettingsScreen(), // ⬅️ جديد
+        '/settings': (context) => const SettingsScreen(),
       },
-
-      // مسارات ديناميكية
       onGenerateRoute: (settings) {
         if (settings.name == '/otp') {
           String phone = '';
@@ -96,7 +84,6 @@ class MyApp extends StatelessWidget {
 
           final args = settings.arguments;
           if (args is String) {
-            // دعم الأسلوب القديم: تمرير رقم فقط
             phone = args;
           } else if (args is Map) {
             phone = args['phone']?.toString() ?? '';
