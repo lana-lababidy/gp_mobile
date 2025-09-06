@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../api/auth_api.dart';
+import 'personal_info_screen.dart'; // 👈 لأننا بداخل مجلد screens نفسه
 
 class OTPScreen extends StatefulWidget {
   final String phone;
@@ -93,7 +94,11 @@ class _OTPScreenState extends State<OTPScreen> {
           );
 
       if (!mounted) return;
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const PersonalInfoScreen()),
+        (r) => false,
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
