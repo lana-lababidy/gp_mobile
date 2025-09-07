@@ -23,7 +23,7 @@ pluginManagement {
     // تعريف نسخ البلغ-إن على مستوى المشروع
     plugins {
         id("com.android.application") version "8.7.3"
-        id("org.jetbrains.kotlin.android") version "2.1.0"
+        id("org.jetbrains.kotlin.android") version "1.9.24"
         id("com.google.gms.google-services") version "4.4.2"
         id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     }

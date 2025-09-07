@@ -1,0 +1,8 @@
+com.example.fikra_app-pngs-0 C:\development\flutter-apps\fikra_app\android\app\build\generated\res\pngs\debug
+com.example.fikra_app-res-1 C:\development\flutter-apps\fikra_app\android\app\build\generated\res\processDebugGoogleServices
+com.example.fikra_app-resValues-2 C:\development\flutter-apps\fikra_app\android\app\build\generated\res\resValues\debug
+com.example.fikra_app-packageDebugResources-3 C:\development\flutter-apps\fikra_app\android\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.example.fikra_app-packageDebugResources-4 C:\development\flutter-apps\fikra_app\android\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.example.fikra_app-debug-5 C:\development\flutter-apps\fikra_app\android\app\build\intermediates\merged_res\debug\mergeDebugResources
+com.example.fikra_app-debug-6 C:\development\flutter-apps\fikra_app\android\app\src\debug\res
+com.example.fikra_app-main-7 C:\development\flutter-apps\fikra_app\android\app\src\main\res
