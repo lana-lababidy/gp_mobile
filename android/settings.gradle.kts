@@ -18,17 +18,16 @@ pluginManagement {
         maven(url = "https://storage.googleapis.com/download.flutter.io")
     }
 
-    // ⬅️ نسخ متوافقة مع Flutter
+    // ⬅️ ثبّت النسخ التالية
     plugins {
         id("com.android.application") version "8.5.2"
-        id("org.jetbrains.kotlin.android") version "1.9.24"
+        id("org.jetbrains.kotlin.android") version "1.9.22"   // 👈 نزّلنا لـ 1.9.22 (مستقرة مع AGP 8.5.x)
         id("com.google.gms.google-services") version "4.4.2"
         id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     }
 }
 
 dependencyResolutionManagement {
-    // نسمح بمستودعات المشروع
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
