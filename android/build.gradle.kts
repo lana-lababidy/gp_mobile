@@ -1,21 +1,20 @@
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
+// android/build.gradle.kts
+// ملاحظة: تعريف المستودعات (google/mavenCentral) صار في settings.gradle.kts
+// لذلك لا نعيد تعريف repositories هنا لتفادي خطأ:
+// "Build was configured to prefer settings repositories over project repositories"
 
-val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()
-rootProject.layout.buildDirectory.value(newBuildDir)
+// اضبط مسار build ليكون خارج android/
+val newBuildDir = rootProject.layout.buildDirectory.dir("../../build")
+rootProject.layout.buildDirectory.set(newBuildDir)
 
 subprojects {
-    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
-    project.layout.buildDirectory.value(newSubprojectBuildDir)
-}
-subprojects {
-    project.evaluationDependsOn(":app")
+    // كل مشروع فرعي يكتب مخرجاته داخل build/<اسم-الموديول>
+    layout.buildDirectory.set(newBuildDir.map { it.dir(name) })
+    // تأكد إن :app يتقيّم أولاً (كما كان)
+    evaluationDependsOn(":app")
 }
 
+// مهمة تنظيف قياسية
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
