@@ -1,6 +1,11 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+
+// ✅ Firebase
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 // مزوّداتك/الكنترولرز
 import 'controllers/cases_controller.dart';
@@ -21,7 +26,40 @@ import 'widgets/exit_guard.dart';
 import 'api/dio_client.dart';
 import 'api/auth_api.dart';
 
-void main() {
+/// هندلر رسائل FCM بالخلفية (لازم تكون top-level)
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  // لوج اختياري
+  // debugPrint('🔔 (BG) ${message.messageId} | ${message.notification?.title}');
+}
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // ✅ تهيئة Firebase لمرة واحدة
+  await Firebase.initializeApp();
+
+  // ✅ تسجيل معالج الخلفية
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // ✅ صلاحية الإشعارات (أندرويد 13+)
+  await FirebaseMessaging.instance
+      .requestPermission(alert: true, badge: true, sound: true);
+
+  // ✅ طباعة التوكين بالكونسول (انسخو وجرّب عليه من Firebase Console)
+  final fcmToken = await FirebaseMessaging.instance.getToken();
+  debugPrint('FCM TOKEN => $fcmToken');
+
+  // (اختياري) لوج بسيط أثناء عمل التطبيق
+  FirebaseMessaging.onMessage.listen((m) {
+    debugPrint('🔔 (FG) ${m.notification?.title} | ${m.notification?.body}');
+  });
+  FirebaseMessaging.onMessageOpenedApp.listen((m) {
+    debugPrint('🔔 (TAP) opened app with data: ${m.data}');
+    // لاحقاً إذا بدك تنقّل حسب data['case_id'] مثلاً
+  });
+
   // استخدم نفس السيرفر الذي اختبرته على Postman
   const String kBaseUrl = 'https://abshir-api.justfortesting.ovh/api';
   // لو بدك خادم محلي لاحقاً:
