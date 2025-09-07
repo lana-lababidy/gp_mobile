@@ -1,13 +1,12 @@
 // android/settings.gradle.kts
 
 pluginManagement {
-    // مسار Flutter SDK
     val flutterSdkPath = run {
-        val properties = java.util.Properties()
-        file("local.properties").inputStream().use { properties.load(it) }
-        val flutterSdkPath = properties.getProperty("flutter.sdk")
-        require(flutterSdkPath != null) { "flutter.sdk not set in local.properties" }
-        flutterSdkPath
+        val props = java.util.Properties()
+        file("local.properties").inputStream().use { props.load(it) }
+        val p = props.getProperty("flutter.sdk")
+        require(p != null) { "flutter.sdk not set in local.properties" }
+        p
     }
 
     includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
@@ -16,21 +15,20 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
-        // مستودع Flutter
         maven(url = "https://storage.googleapis.com/download.flutter.io")
     }
 
-    // تعاريف نسخ البلغ-إن
+    // ⬅️ نسخ متوافقة مع Flutter
     plugins {
-        id("com.android.application") version "8.7.3"
-        id("org.jetbrains.kotlin.android") version "1.9.24"     // ثبّتنا كوتلن
+        id("com.android.application") version "8.5.2"
+        id("org.jetbrains.kotlin.android") version "1.9.24"
         id("com.google.gms.google-services") version "4.4.2"
         id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     }
 }
 
 dependencyResolutionManagement {
-    // اسمح بمستودعات المشروع (الـ Flutter plugin بيضيف maven خاص)
+    // نسمح بمستودعات المشروع
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
@@ -39,7 +37,7 @@ dependencyResolutionManagement {
     }
 }
 
-// 👇 مهم: طبّق Flutter plugin loader (بدون apply false)
+// طبّق Flutter plugin loader فقط
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
 }
