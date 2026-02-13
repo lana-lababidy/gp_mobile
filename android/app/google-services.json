@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "463697081815",
+    "project_id": "abshir-app-bdea2",
+    "storage_bucket": "abshir-app-bdea2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:463697081815:android:c7b4f75a7e6411efc58792",
+        "android_client_info": {
+          "package_name": "com.example.fikra_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDa8ulp4YbsNpNJNSFZ45Apc6Vrs1MfWAE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
